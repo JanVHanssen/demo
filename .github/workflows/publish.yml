@@ -6,10 +6,9 @@ on:
 
 env:
   PROJECT_DIR: backend
-  # Voeg deze environment variabelen toe:
   GROUP_ID: be.ucll.se
   ARTIFACT_ID: demo
-  VERSION: 0.0.1-SNAPSHOT
+  VERSION: 0.0.1-SNAPSHOT # Zorg dat dit EXACT overeenkomt met pom.xml
   OWNER: JanVHanssen
   REPO: SoftwareEngineering
   AZURE_WEBAPP_NAME: jvhbackend
@@ -95,12 +94,28 @@ jobs:
 
       - name: Download JAR from GitHub Packages
         run: |
+          # Debug: Toon beschikbare versies
+          mvn dependency:list -DremoteRepositories=github::::https://maven.pkg.github.com/${{ env.OWNER }}/${{ env.REPO }}
+
+          # Download specifieke versie
           mvn dependency:get \
             -DremoteRepositories=github::::https://maven.pkg.github.com/${{ env.OWNER }}/${{ env.REPO }} \
             -Dartifact=${{ env.GROUP_ID }}:${{ env.ARTIFACT_ID }}:${{ env.VERSION }}
 
+          # Verifieer download
           GROUP_PATH=$(echo ${{ env.GROUP_ID }} | tr '.' '/')
-          cp ~/.m2/repository/$GROUP_PATH/${{ env.ARTIFACT_ID }}/${{ env.VERSION }}/*.jar app.jar
+          JAR_FILE=~/.m2/repository/$GROUP_PATH/${{ env.ARTIFACT_ID }}/${{ env.VERSION }}/${{ env.ARTIFACT_ID }}-${{ env.VERSION }}.jar
+
+          if [ ! -f "$JAR_FILE" ]; then
+            echo "::error::JAR file not found at expected path: $JAR_FILE"
+            echo "Contents of directory:"
+            ls -la ~/.m2/repository/$GROUP_PATH/${{ env.ARTIFACT_ID }}/${{ env.VERSION }}/
+            exit 1
+          fi
+
+          cp "$JAR_FILE" app.jar
+          echo "JAR file ready:"
+          ls -l app.jar
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
