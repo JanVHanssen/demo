@@ -58,3 +58,10 @@ jobs:
           </servers>
           </settings>
           EOF
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_D426C91C358F4B92BB9128D01E5D9E2E }}
+          package: app.jar
