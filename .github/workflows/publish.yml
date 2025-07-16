@@ -8,7 +8,7 @@ env:
   PROJECT_DIR: backend
   GROUP_ID: be.ucll.se
   ARTIFACT_ID: demo
-  VERSION: 0.0.1-SNAPSHOT # Zorg dat dit EXACT overeenkomt met pom.xml
+  VERSION: 0.0.1-SNAPSHOT
   OWNER: JanVHanssen
   REPO: SoftwareEngineering
   AZURE_WEBAPP_NAME: jvhbackend
@@ -58,6 +58,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy to Vercel
+        working-directory: frontend # Voeg working-directory toe
         run: |
           npm install -g vercel@latest
           vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
@@ -78,6 +79,7 @@ jobs:
           java-version: "21"
 
       - name: Configure Maven
+        working-directory: ${{ env.PROJECT_DIR }} # Voeg working-directory toe
         run: |
           mkdir -p ~/.m2
           cat > ~/.m2/settings.xml <<EOF
@@ -93,33 +95,36 @@ jobs:
           EOF
 
       - name: Download JAR from GitHub Packages
+        working-directory: ${{ env.PROJECT_DIR }} # Voeg working-directory toe
         run: |
-          # Debug: Toon beschikbare versies
-          mvn dependency:list -DremoteRepositories=github::::https://maven.pkg.github.com/${{ env.OWNER }}/${{ env.REPO }}
+          # Eerst lokaal bouwen als fallback
+          mvn -B clean package -DskipTests
+          cp target/*.jar ../app.jar || echo "Local build failed, trying GitHub Packages..."
 
-          # Download specifieke versie
-          mvn dependency:get \
-            -DremoteRepositories=github::::https://maven.pkg.github.com/${{ env.OWNER }}/${{ env.REPO }} \
-            -Dartifact=${{ env.GROUP_ID }}:${{ env.ARTIFACT_ID }}:${{ env.VERSION }}
-
-          # Verifieer download
-          GROUP_PATH=$(echo ${{ env.GROUP_ID }} | tr '.' '/')
-          JAR_FILE=~/.m2/repository/$GROUP_PATH/${{ env.ARTIFACT_ID }}/${{ env.VERSION }}/${{ env.ARTIFACT_ID }}-${{ env.VERSION }}.jar
-
-          if [ ! -f "$JAR_FILE" ]; then
-            echo "::error::JAR file not found at expected path: $JAR_FILE"
-            echo "Contents of directory:"
-            ls -la ~/.m2/repository/$GROUP_PATH/${{ env.ARTIFACT_ID }}/${{ env.VERSION }}/
-            exit 1
+          # Probeer van GitHub Packages te downloaden
+          if [ ! -f "../app.jar" ]; then
+            mvn dependency:get \
+              -DremoteRepositories=github::::https://maven.pkg.github.com/${{ env.OWNER }}/${{ env.REPO }} \
+              -Dartifact=${{ env.GROUP_ID }}:${{ env.ARTIFACT_ID }}:${{ env.VERSION }}
+            
+            GROUP_PATH=$(echo ${{ env.GROUP_ID }} | tr '.' '/')
+            JAR_FILE=~/.m2/repository/$GROUP_PATH/${{ env.ARTIFACT_ID }}/${{ env.VERSION }}/${{ env.ARTIFACT_ID }}-${{ env.VERSION }}.jar
+            cp "$JAR_FILE" ../app.jar
           fi
 
-          cp "$JAR_FILE" app.jar
           echo "JAR file ready:"
+          ls -l ../app.jar
+
+      - name: Deploy to Azure Web App
+        run: |
+          echo "Deploying JAR file:"
           ls -l app.jar
+          cp app.jar ${{ env.PROJECT_DIR }}/app.jar || true
+        working-directory: ${{ env.PROJECT_DIR }}
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_D426C91C358F4B92BB9128D01E5D9E2E }}
-          package: app.jar
+          package: ${{ env.PROJECT_DIR }}/app.jar
