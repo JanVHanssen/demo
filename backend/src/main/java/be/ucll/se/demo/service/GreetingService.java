@@ -2,26 +2,21 @@ package be.ucll.se.demo.service;
 
 import be.ucll.se.demo.model.Greeting;
 import be.ucll.se.demo.repository.GreetingRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.Optional;
 
 @Service
 public class GreetingService {
 
-    private final GreetingRepository greetingRepository;
+    private final GreetingRepository repository;
 
-    @Autowired
-    public GreetingService(GreetingRepository greetingRepository) {
-        this.greetingRepository = greetingRepository;
+    public GreetingService(GreetingRepository repository) {
+        this.repository = repository;
     }
 
-    public List<Greeting> getAllGreetings() {
-        return greetingRepository.findAll();
-    }
-
-    public Greeting getGreetingById(Long id) {
-        return greetingRepository.findById(id).orElse(null);
+    public Greeting getGreetingById(long id) {
+        Optional<Greeting> greeting = repository.findById(id);
+        return greeting.orElse(null);
     }
 }

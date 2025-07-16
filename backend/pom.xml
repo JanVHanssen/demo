@@ -11,8 +11,8 @@
 	<groupId>be.ucll.se</groupId>
 	<artifactId>demo</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>janvhanssen-backend</name>
-	<description>janvhanssen-backend</description>
+	<name>backend</name>
+	<description>backend</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -26,10 +26,26 @@
 		<tag/>
 		<url/>
 	</scm>
-	<properties>
-		<java.version>21</java.version>
-	</properties>
 	<dependencies>
+
+	    <!-- Algemene projectinstellingen  -->
+    <properties>
+        <java.version>21</java.version>
+         <maven.compiler.source>21</maven.compiler.source>
+         <maven.compiler.target>21</maven.compiler.target>
+         <maven.deploy.uniqueVersion>false</maven.deploy.uniqueVersion>
+        <maven.deploy.skip>false</maven.deploy.skip>
+    </properties>
+
+    <!-- Publiceer naar GitHub Packages van dit repo -->
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/JanVHanssen/SoftwareEngineering</url>
+        </repository>
+    </distributionManagement>
+
 	<!-- Spring Boot Core -->
 	<dependency>
 		<groupId>org.springframework.boot</groupId>

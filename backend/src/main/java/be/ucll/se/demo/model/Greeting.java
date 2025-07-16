@@ -1,21 +1,23 @@
 package be.ucll.se.demo.model;
 
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 @Entity
 public class Greeting {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String message;
 
     // Constructors
     public Greeting() {
+    }
+
+    public Greeting(Long id, String message) {
+        this.id = id;
+        this.message = message;
     }
 
     public Greeting(String message) {

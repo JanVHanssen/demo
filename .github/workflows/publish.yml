@@ -1,0 +1,90 @@
+name: Publish Package
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  PROJECT_DIR: backend
+  MAVEN_SETTINGS: ~/.m2/settings.xml
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ---------------- Checkout ----------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---------------- Controleer structuur ----------------
+      - name: Verify directory structure
+        run: |
+          ls -R
+          ls -la ${{ env.PROJECT_DIR }}/pom.xml || echo "POM not found!"
+
+      # ---------------- Java & Maven ----------------
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: microsoft
+          java-version: "21"
+          server-id: github
+          server-username: ${{ github.actor }}
+          server-password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---------------- Maven configureren ----------------
+      - name: Configure Maven settings.xml
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOF
+          <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+            <servers>
+              <server>
+                <id>github</id>
+                <username>${{ github.actor }}</username>
+                <password>${{ secrets.GITHUB_TOKEN }}</password>
+              </server>
+            </servers>
+            <profiles>
+              <profile>
+                <id>github</id>
+                <repositories>
+                  <repository>
+                    <id>github</id>
+                    <url>https://maven.pkg.github.com/${{ github.repository }}</url>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>true</enabled></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>github</activeProfile>
+            </activeProfiles>
+          </settings>
+          EOF
+
+      # ---------------- Test toegang tot GitHub Packages ----------------
+      - name: Test GitHub Packages access
+        run: |
+          curl -u ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} \
+            https://maven.pkg.github.com/${{ github.repository_owner }}/${{ github.event.repository.name }} -Iv
+
+      # ---------------- Versie bumpen ----------------
+      - name: Set unique version
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          echo "Huidige directory: $(pwd)"
+          ls -la
+          echo "Probeer projectversie op te halen..."
+          mvn help:evaluate -Dexpression=project.version -DforceStdout -X
