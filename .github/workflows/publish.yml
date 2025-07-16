@@ -5,7 +5,14 @@ on:
     branches: [main]
 
 env:
-  PROJECT_DIR: backend # Pas aan als je project in een submap zit
+  PROJECT_DIR: backend
+  # Voeg deze environment variabelen toe:
+  GROUP_ID: be.ucll.se
+  ARTIFACT_ID: demo
+  VERSION: 0.0.1-SNAPSHOT
+  OWNER: JanVHanssen
+  REPO: SoftwareEngineering
+  AZURE_WEBAPP_NAME: jvhbackend
 
 jobs:
   publish-backend:
@@ -22,16 +29,29 @@ jobs:
           java-version: "21"
           cache: "maven"
 
+      - name: Configure Maven
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOF
+          <settings>
+            <servers>
+              <server>
+                <id>github</id>
+                <username>${{ env.OWNER }}</username>
+                <password>${{ secrets.PAT_TOKEN }}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+
       - name: Build and Publish to GitHub Packages
         working-directory: ${{ env.PROJECT_DIR }}
-        run: |
-          # Bouw het project en publish naar GitHub Packages
-          mvn -B clean deploy -DskipTests
+        run: mvn -B clean deploy -DskipTests
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
 
   deploy-frontend:
-    needs: publish-backend # Wacht tot de backend gepubliceerd is
+    needs: publish-backend
     runs-on: ubuntu-latest
 
     steps:
@@ -44,35 +64,43 @@ jobs:
           vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
           vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
 
+  deploy-backend-to-azure:
+    needs: publish-backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
       - name: Configure Maven
         run: |
           mkdir -p ~/.m2
           cat > ~/.m2/settings.xml <<EOF
           <settings>
-          <servers>
-          <server>
-           <id>github</id>
-           <username>JanVHanssen</username>  <!-- Je GitHub username -->
-           <password>\${env.GITHUB_TOKEN}</password>
-          </server>
-          </servers>
+            <servers>
+              <server>
+                <id>github</id>
+                <username>${{ env.OWNER }}</username>
+                <password>${{ secrets.PAT_TOKEN }}</password>
+              </server>
+            </servers>
           </settings>
           EOF
 
       - name: Download JAR from GitHub Packages
         run: |
-          echo "Attempting to download artifact from GitHub Packages"
-          mvn -X -B org.apache.maven.plugins:maven-dependency-plugin:3.7.0:get \
+          mvn dependency:get \
             -DremoteRepositories=github::::https://maven.pkg.github.com/${{ env.OWNER }}/${{ env.REPO }} \
-            -Dartifact=${{ env.GROUP_ID }}:${{ env.ARTIFACT_ID }}:${{ env.VERSION }}:jar
+            -Dartifact=${{ env.GROUP_ID }}:${{ env.ARTIFACT_ID }}:${{ env.VERSION }}
 
           GROUP_PATH=$(echo ${{ env.GROUP_ID }} | tr '.' '/')
-          echo "Downloaded files:"
-          ls -l ~/.m2/repository/$GROUP_PATH/${{ env.ARTIFACT_ID }}/${{ env.VERSION }}/
-
           cp ~/.m2/repository/$GROUP_PATH/${{ env.ARTIFACT_ID }}/${{ env.VERSION }}/*.jar app.jar
-          echo "JAR file ready for deployment:"
-          ls -l app.jar
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
