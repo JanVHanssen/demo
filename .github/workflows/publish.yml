@@ -28,7 +28,7 @@ jobs:
           # Bouw het project en publish naar GitHub Packages
           mvn -B clean deploy -DskipTests
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
 
   deploy-frontend:
     needs: publish-backend # Wacht tot de backend gepubliceerd is
@@ -43,3 +43,18 @@ jobs:
           npm install -g vercel@latest
           vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
           vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Configure Maven
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOF
+          <settings>
+          <servers>
+          <server>
+           <id>github</id>
+           <username>JanVHanssen</username>  <!-- Je GitHub username -->
+           <password>\${env.GITHUB_TOKEN}</password>
+          </server>
+          </servers>
+          </settings>
+          EOF
