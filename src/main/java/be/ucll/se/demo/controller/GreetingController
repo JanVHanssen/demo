@@ -1,0 +1,32 @@
+package be.ucll.se.demo.controller;
+
+import be.ucll.se.demo.model.Greeting;
+import be.ucll.se.demo.service.GreetingService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/greetings")
+public class GreetingController {
+
+    private final GreetingService greetingService;
+
+    @Autowired
+    public GreetingController(GreetingService greetingService) {
+        this.greetingService = greetingService;
+    }
+
+    // GET /api/greetings
+    @GetMapping
+    public List<Greeting> getAllGreetings() {
+        return greetingService.getAllGreetings();
+    }
+
+    // GET /api/greetings/{id}
+    @GetMapping("/{id}")
+    public Greeting getGreetingById(@PathVariable Long id) {
+        return greetingService.getGreetingById(id);
+    }
+}

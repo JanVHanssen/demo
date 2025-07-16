@@ -1,0 +1,11 @@
+@Component
+public class InitGreetings {
+
+    @Autowired
+    private GreetingRepository greetingRepository;
+
+    @PostConstruct
+    public void insertGreeting() {
+        greetingRepository.save(new Greeting("Hello world"));
+    }
+}
