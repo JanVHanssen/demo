@@ -59,6 +59,21 @@ jobs:
           </settings>
           EOF
 
+      - name: Download JAR from GitHub Packages
+        run: |
+          echo "Attempting to download artifact from GitHub Packages"
+          mvn -X -B org.apache.maven.plugins:maven-dependency-plugin:3.7.0:get \
+            -DremoteRepositories=github::::https://maven.pkg.github.com/${{ env.OWNER }}/${{ env.REPO }} \
+            -Dartifact=${{ env.GROUP_ID }}:${{ env.ARTIFACT_ID }}:${{ env.VERSION }}:jar
+
+          GROUP_PATH=$(echo ${{ env.GROUP_ID }} | tr '.' '/')
+          echo "Downloaded files:"
+          ls -l ~/.m2/repository/$GROUP_PATH/${{ env.ARTIFACT_ID }}/${{ env.VERSION }}/
+
+          cp ~/.m2/repository/$GROUP_PATH/${{ env.ARTIFACT_ID }}/${{ env.VERSION }}/*.jar app.jar
+          echo "JAR file ready for deployment:"
+          ls -l app.jar
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
