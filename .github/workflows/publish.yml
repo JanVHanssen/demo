@@ -8,7 +8,7 @@ env:
   PROJECT_DIR: backend
   GROUP_ID: be.ucll.se
   ARTIFACT_ID: demo
-  VERSION: 0.0.1-SNAPSHOT
+  VERSION: 0.0.1
   OWNER: JanVHanssen
   REPO: demo
   AZURE_WEBAPP_NAME: jvhbackend
