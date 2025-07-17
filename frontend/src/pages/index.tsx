@@ -2,26 +2,36 @@
 import React, { useEffect, useState } from "react";
 import { getGreeting } from "../services/HelloService";
 import Header from "../components/Header";
+import { Geist, Geist_Mono } from "next/font/google";
 
+// Fonts import
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 const Home: React.FC = () => {
   const [greeting, setGreeting] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    
     getGreeting()
       .then(setGreeting)
       .catch((err) => setError(err.message));
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
-      <Header />
-      <main className="text-center mt-8">
+    <div
+      className={`${geistSans.className} ${geistMono.className} min-h-screen flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100`}
+    >
+      {/* Header bovenaan */}
+      <header className="p-6 border-b border-gray-300 dark:border-gray-700">
+        <Header />
+      </header>
+
+      {/* Content */}
+      <main className="flex-grow flex flex-col items-center justify-center p-8 text-center">
         <h1 className="text-4xl font-bold mb-4">Greeting:</h1>
         {error ? (
-          <p className="text-red-600 font-medium">Error: {error}</p>
+          <p className="text-red-500 text-lg">{error}</p>
         ) : (
           <p className="text-green-600 text-2xl">{greeting}</p>
         )}
