@@ -26,12 +26,37 @@ jobs:
           java-version: "21"
           cache: "maven"
 
+      - name: Configure GitHub Packages Access
+        run: |
+          # Configure Maven settings.xml with GitHub Packages authentication
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOF
+          <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                                https://maven.apache.org/xsd/settings-1.0.0.xsd">
+            <servers>
+              <server>
+                <id>github</id>
+                <username>\${{ github.actor }}</username>
+                <password>\${{ secrets.PAT_TOKEN }}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+
       - name: Build and Publish
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           mvn -B clean deploy -DskipTests
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+
+      - name: Verify Package Upload
+        run: |
+          echo "Checking if package was uploaded to GitHub Packages"
+          curl -s -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
+            https://maven.pkg.github.com/${{ env.OWNER }}/${{ env.REPO }}/${{ env.GROUP_ID }}/${{ env.ARTIFACT_ID }}/${{ env.VERSION }}/
 
   deploy-backend-to-azure:
     needs: publish-backend
@@ -45,36 +70,66 @@ jobs:
           distribution: "temurin"
           java-version: "21"
 
+      - name: Configure GitHub Packages Access
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOF
+          <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                                https://maven.apache.org/xsd/settings-1.0.0.xsd">
+            <servers>
+              <server>
+                <id>github</id>
+                <username>\${{ github.actor }}</username>
+                <password>\${{ secrets.PAT_TOKEN }}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+
       - name: Prepare JAR file
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           # Optie 1: Gebruik lokaal gebouwd JAR
           if [ -f "target/${{ env.ARTIFACT_ID }}-${{ env.VERSION }}.jar" ]; then
+            echo "Using locally built JAR file"
             cp "target/${{ env.ARTIFACT_ID }}-${{ env.VERSION }}.jar" app.jar
           else
             # Optie 2: Download van GitHub Packages
             echo "Attempting to download artifact from GitHub Packages"
-            mvn -X -B org.apache.maven.plugins:maven-dependency-plugin:3.7.0:get \
+            mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.7.0:get \
               -DremoteRepositories=github::::https://maven.pkg.github.com/${{ env.OWNER }}/${{ env.REPO }} \
-              -Dartifact=${{ env.GROUP_ID }}:${{ env.ARTIFACT_ID }}:${{ env.VERSION }}:jar
-
-            GROUP_PATH=$(echo ${{ env.GROUP_ID }} | tr '.' '/')
-            echo "Downloaded files:"
-            ls -l ~/.m2/repository/$GROUP_PATH/${{ env.ARTIFACT_ID }}/${{ env.VERSION }}/
-
-            cp ~/.m2/repository/$GROUP_PATH/${{ env.ARTIFACT_ID }}/${{ env.VERSION }}/*.jar app.jar
+              -Dartifact=${{ env.GROUP_ID }}:${{ env.ARTIFACT_ID }}:${{ env.VERSION }} \
+              -Dtransitive=false \
+              -Ddest=app.jar
+            
+            if [ ! -f "app.jar" ]; then
+              echo "Trying alternative download method"
+              GROUP_PATH=$(echo ${{ env.GROUP_ID }} | tr '.' '/')
+              mvn dependency:copy \
+                -Dartifact=${{ env.GROUP_ID }}:${{ env.ARTIFACT_ID }}:${{ env.VERSION }} \
+                -DoutputDirectory=. \
+                -Dmdep.useBaseVersion=true \
+                -Dmdep.stripVersion=true
+              mv ${{ env.ARTIFACT_ID }}.jar app.jar
+            fi
           fi
 
           # Verifieer JAR
           if [ ! -f "app.jar" ]; then
             echo "::error::Failed to locate JAR file"
+            echo "Contents of target directory:"
             ls -la target/ || true
+            echo "Contents of .m2 repository:"
             ls -la ~/.m2/repository/$(echo ${{ env.GROUP_ID }} | tr '.' '/')/ || true
             exit 1
           fi
 
-          echo "JAR file ready:"
+          echo "JAR file details:"
           ls -l app.jar
+          echo "JAR file contents:"
+          jar tf app.jar | head -20
 
       - name: Deploy to Azure
         uses: azure/webapps-deploy@v2
@@ -89,6 +144,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm install
 
       - name: Deploy to Vercel
         working-directory: frontend
