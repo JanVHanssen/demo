@@ -53,13 +53,17 @@ jobs:
             cp "target/${{ env.ARTIFACT_ID }}-${{ env.VERSION }}.jar" app.jar
           else
             # Optie 2: Download van GitHub Packages
-            mvn dependency:get \
-              -Dartifact=${{ env.GROUP_ID }}:${{ env.ARTIFACT_ID }}:${{ env.VERSION }} \
-              -DremoteRepositories=github::::https://maven.pkg.github.com/${{ env.OWNER }}/${{ env.REPO }}
-            
-            GROUP_PATH=$(echo ${{ env.GROUP_ID }} | tr '.' '/')
-            cp "~/.m2/repository/$GROUP_PATH/${{ env.ARTIFACT_ID }}/${{ env.VERSION }}/${{ env.ARTIFACT_ID }}-${{ env.VERSION }}.jar" app.jar
-          fi
+          echo "Attempting to download artifact from GitHub Packages"
+          mvn -X -B org.apache.maven.plugins:maven-dependency-plugin:3.7.0:get \
+            -DremoteRepositories=github::::https://maven.pkg.github.com/${{ env.OWNER }}/${{ env.REPO }} \
+            -Dartifact=${{ env.GROUP_ID }}:${{ env.ARTIFACT_ID }}:${{ env.VERSION }}:jar
+
+          GROUP_PATH=$(echo ${{ env.GROUP_ID }} | tr '.' '/')
+          echo "Downloaded files:"
+          ls -l ~/.m2/repository/$GROUP_PATH/${{ env.ARTIFACT_ID }}/${{ env.VERSION }}/
+
+          cp ~/.m2/repository/$GROUP_PATH/${{ env.ARTIFACT_ID }}/${{ env.VERSION }}/*.jar app.jar
+
 
           # Verifieer JAR
           if [ ! -f "app.jar" ]; then
