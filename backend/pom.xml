@@ -15,7 +15,7 @@
     
     <groupId>be.ucll.se</groupId>
     <artifactId>demo</artifactId>
-    <version>0.0.10</version> <!-- ✅ Geen SNAPSHOT meer -->
+    <version>0.0.11</version> <!-- ✅ Geen SNAPSHOT meer -->
 
     <name>backend</name>
     <description>backend</description>
