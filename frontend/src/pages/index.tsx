@@ -9,6 +9,7 @@ const Home: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    
     getGreeting()
       .then(setGreeting)
       .catch((err) => setError(err.message));
