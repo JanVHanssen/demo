@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
+    
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -14,8 +18,30 @@
     <version>0.0.1</version>
     <name>backend</name>
     <description>backend</description>
-    
-    <!-- Properties sectie -->
+    <url>https://github.com/JanVHanssen/demo</url>
+
+    <licenses>
+        <license>
+            <name>The MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>janvh</id>
+            <name>Jan Van Hanssen</name>
+            <email>jan@example.com</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/JanVHanssen/demo.git</connection>
+        <developerConnection>scm:git:ssh://github.com/JanVHanssen/demo.git</developerConnection>
+        <url>https://github.com/JanVHanssen/demo</url>
+    </scm>
+
     <properties>
         <java.version>21</java.version>
         <maven.compiler.source>21</maven.compiler.source>
@@ -24,22 +50,16 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
-    <!-- Repository configuratie -->
     <repositories>
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
             <url>https://maven.pkg.github.com/JanVHanssen/demo</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
+            <releases><enabled>true</enabled></releases>
+            <snapshots><enabled>true</enabled></snapshots>
         </repository>
     </repositories>
 
-    <!-- Publicatie configuratie -->
     <distributionManagement>
         <repository>
             <id>github</id>
@@ -54,7 +74,6 @@
     </distributionManagement>
 
     <dependencies>
-        <!-- Spring Boot dependencies blijven hetzelfde -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
@@ -85,8 +104,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
-            
-            <!-- Toegevoegd: Maven Deploy Plugin met configuratie -->
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
@@ -95,8 +113,7 @@
                     <skip>false</skip>
                 </configuration>
             </plugin>
-            
-            <!-- Toegevoegd: Source plugin voor betere package -->
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
@@ -112,4 +129,5 @@
             </plugin>
         </plugins>
     </build>
+
 </project>
