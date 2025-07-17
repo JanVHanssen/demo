@@ -10,7 +10,7 @@ env:
   ARTIFACT_ID: demo
   VERSION: 0.0.1-SNAPSHOT
   OWNER: JanVHanssen
-  REPO: SoftwareEngineering
+  REPO: demo
   AZURE_WEBAPP_NAME: jvhbackend
 
 jobs:
