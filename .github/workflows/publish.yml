@@ -39,7 +39,7 @@ jobs:
               <server>
                 <id>github</id>
                 <username>\${{ github.actor }}</username>
-                <password>\${{ secrets.GITHUB_TOKEN }}</password>
+                <password>\${{ secrets.PAT_TOKEN }}</password>
               </server>
             </servers>
           </settings>
@@ -50,12 +50,12 @@ jobs:
         run: |
           mvn -B clean deploy -DskipTests
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
 
       - name: Verify Package Upload
         run: |
           echo "Checking if package was uploaded to GitHub Packages"
-          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          curl -s -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
             https://maven.pkg.github.com/${{ env.OWNER }}/${{ env.REPO }}/${{ env.GROUP_ID }}/${{ env.ARTIFACT_ID }}/${{ env.VERSION }}/
 
   deploy-backend-to-azure:
@@ -82,7 +82,7 @@ jobs:
               <server>
                 <id>github</id>
                 <username>\${{ github.actor }}</username>
-                <password>\${{ secrets.GITHUB_TOKEN }}</password>
+                <password>\${{ secrets.PAT_TOKEN }}</password>
               </server>
             </servers>
           </settings>
