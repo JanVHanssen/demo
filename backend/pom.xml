@@ -15,7 +15,8 @@
     
     <groupId>be.ucll.se</groupId>
     <artifactId>demo</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version> <!-- ✅ Geen SNAPSHOT meer -->
+
     <name>backend</name>
     <description>backend</description>
     <url>https://github.com/JanVHanssen/demo</url>
@@ -47,8 +48,9 @@
             <id>github</id>
             <name>GitHub Packages</name>
             <url>https://maven.pkg.github.com/JanVHanssen/demo</url>
-            <releases><enabled>true</enabled></releases>
-            <snapshots><enabled>true</enabled></snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
         </repository>
     </repositories>
 
@@ -58,11 +60,6 @@
             <name>GitHub Packages</name>
             <url>https://maven.pkg.github.com/JanVHanssen/demo</url>
         </repository>
-        <snapshotRepository>
-            <id>github</id>
-            <name>GitHub Snapshots</name>
-            <url>https://maven.pkg.github.com/JanVHanssen/demo</url>
-        </snapshotRepository>
     </distributionManagement>
 
     <dependencies>

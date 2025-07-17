@@ -5,28 +5,60 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write # nodig voor commit & tag
   packages: write
 
 env:
   PROJECT_DIR: backend
   GROUP_ID: be.ucll.se
   ARTIFACT_ID: demo
-  VERSION: 0.0.1-SNAPSHOT
   OWNER: JanVHanssen
   REPO: demo
   AZURE_WEBAPP_NAME: jvhbackend
 
 jobs:
-  publish-backend:
+  bump-version:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
 
+      - name: Bump version in pom.xml
+        id: set-version
+        run: |
+          FILE=${{ env.PROJECT_DIR }}/pom.xml
+          CURRENT_VERSION=$(xmllint --xpath "//*[local-name()='project']/*[local-name()='version']/text()" $FILE)
+          echo "Current version: $CURRENT_VERSION"
+
+          BASE=$(echo $CURRENT_VERSION | cut -d. -f1-2)
+          PATCH=$(echo $CURRENT_VERSION | cut -d. -f3)
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$BASE.$NEW_PATCH"
+
+          echo "New version: $NEW_VERSION"
+
+          # Update version in pom.xml
+          sed -i "s|<version>$CURRENT_VERSION</version>|<version>$NEW_VERSION</version>|" $FILE
+
+          # Commit the change
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git commit -am "🔖 Bump version to $NEW_VERSION"
+          git tag "v$NEW_VERSION"
+          git push origin main --tags
+
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+  publish-backend:
+    needs: bump-version
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-java@v4
         with:
-          distribution: "temurin"
+          distribution: "microsoft"
           java-version: "21"
           server-id: github
           server-username: ${{ github.actor }}
@@ -36,9 +68,7 @@ jobs:
         run: |
           mkdir -p ~/.m2
           cat > ~/.m2/settings.xml <<EOF
-          <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+          <settings>
             <servers>
               <server>
                 <id>github</id>
@@ -54,27 +84,21 @@ jobs:
         run: mvn -B clean deploy -DskipTests
 
   deploy-backend-to-azure:
-    needs: publish-backend
+    needs: [publish-backend, bump-version]
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-java@v4
         with:
-          distribution: "temurin"
+          distribution: "microsoft"
           java-version: "21"
-          server-id: github
-          server-username: ${{ github.actor }}
-          server-password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure Maven for GitHub Packages
         run: |
           mkdir -p ~/.m2
           cat > ~/.m2/settings.xml <<EOF
-          <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+          <settings>
             <servers>
               <server>
                 <id>github</id>
@@ -88,19 +112,17 @@ jobs:
       - name: Prepare JAR file
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          echo "Attempting to download artifact from GitHub Packages"
+          VERSION=${{ needs.bump-version.outputs.version }}
+          echo "Using version $VERSION"
           mvn -B org.apache.maven.plugins:maven-dependency-plugin:3.7.0:get \
             -DremoteRepositories=github::::https://maven.pkg.github.com/${{ env.OWNER }}/${{ env.REPO }} \
-            -Dartifact=${{ env.GROUP_ID }}:${{ env.ARTIFACT_ID }}:${{ env.VERSION }}:jar \
+            -Dartifact=${{ env.GROUP_ID }}:${{ env.ARTIFACT_ID }}:$VERSION:jar \
             -Ddest=app.jar
 
           if [ ! -f "app.jar" ]; then
             echo "::error::Failed to download JAR"
             exit 1
           fi
-
-          echo "JAR file details:"
-          ls -l app.jar
 
       - name: Deploy to Azure
         uses: azure/webapps-deploy@v2
@@ -112,7 +134,6 @@ jobs:
   deploy-frontend:
     needs: publish-backend
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
