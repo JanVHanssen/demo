@@ -15,7 +15,7 @@
     
     <groupId>be.ucll.se</groupId>
     <artifactId>demo</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.1-SNAPSHOT</version>
     <name>backend</name>
     <description>backend</description>
     <url>https://github.com/JanVHanssen/demo</url>
@@ -27,14 +27,6 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-
-    <developers>
-        <developer>
-            <id>janvh</id>
-            <name>Jan Van Hanssen</name>
-            <email>jan@example.com</email>
-        </developer>
-    </developers>
 
     <scm>
         <connection>scm:git:git://github.com/JanVHanssen/demo.git</connection>
