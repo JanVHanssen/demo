@@ -1,0 +1,42 @@
+package be.ucll.se.demo.controller;
+
+import be.ucll.se.demo.model.Rent;
+import be.ucll.se.demo.service.RentService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/rents")
+public class RentController {
+
+    private final RentService rentService;
+
+    public RentController(RentService rentService) {
+        this.rentService = rentService;
+    }
+
+    @GetMapping
+    public List<Rent> getAllRents() {
+        return rentService.getAllRents();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Rent> getRentById(@PathVariable Long id) {
+        return rentService.getRentById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public Rent addRent(@RequestBody Rent rent) {
+        return rentService.addRent(rent);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteRent(@PathVariable Long id) {
+        rentService.deleteRent(id);
+        return ResponseEntity.noContent().build();
+    }
+}

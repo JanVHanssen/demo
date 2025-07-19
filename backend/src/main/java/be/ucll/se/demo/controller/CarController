@@ -1,0 +1,42 @@
+package be.ucll.se.demo.controller;
+
+import be.ucll.se.demo.model.Car;
+import be.ucll.se.demo.service.CarService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/cars")
+public class CarController {
+
+    private final CarService carService;
+
+    public CarController(CarService carService) {
+        this.carService = carService;
+    }
+
+    @GetMapping
+    public List<Car> getAllCars() {
+        return carService.getAllCars();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Car> getCarById(@PathVariable Long id) {
+        return carService.getCarById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public Car addCar(@RequestBody Car car) {
+        return carService.addCar(car);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteCar(@PathVariable Long id) {
+        carService.deleteCar(id);
+        return ResponseEntity.noContent().build();
+    }
+}
