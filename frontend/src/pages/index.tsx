@@ -19,9 +19,7 @@ const Home: React.FC = () => {
   }, []);
 
   return (
-    <div
-      className={`${geistSans.className} ${geistMono.className} min-h-screen flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100`}
-    >
+    <div className={`${geistSans.className} min-h-screen flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100`}>
       {/* Header bovenaan */}
       <header className="p-6 border-b border-gray-300 dark:border-gray-700">
         <Header />
