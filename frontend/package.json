@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "tailwind:init": "tailwindcss init -p"
+    "lint": "next lint"
   },
   "dependencies": {
     "lucide-react": "^0.525.0",
