@@ -13,8 +13,8 @@ const Header: React.FC = () => {
         <a href="/cars" className="hover:underline">Cars</a>
         <a href="/rentals" className="hover:underline">Rentals</a>
         <a href="/rents" className="hover:underline">Rents</a>
-        <a href="/login" className="hover:underline">Login</a>
-        <a href="/register" className="hover:underline">Register</a>
+        <a href="/loginpage" className="hover:underline">Login</a>
+        <a href="/registerpage" className="hover:underline">Register</a>
       </nav>
 
       {/* Notification icon */}
