@@ -1,4 +1,3 @@
-// components/Header.tsx
 import React from "react";
 import { Bell } from "lucide-react";
 
@@ -9,10 +8,13 @@ const Header: React.FC = () => {
       <div className="text-2xl font-bold">Car4Rental</div>
 
       {/* Navigation */}
-      <nav className="flex gap-6 text-lg">
+      <nav className="flex gap-6 text-lg items-center">
+        <a href="/" className="hover:underline">Home</a>
         <a href="/cars" className="hover:underline">Cars</a>
         <a href="/rentals" className="hover:underline">Rentals</a>
         <a href="/rents" className="hover:underline">Rents</a>
+        <a href="/login" className="hover:underline">Login</a>
+        <a href="/register" className="hover:underline">Register</a>
       </nav>
 
       {/* Notification icon */}
@@ -23,7 +25,7 @@ const Header: React.FC = () => {
         >
           <Bell size={24} />
         </button>
-        {/* Notification count badge (example: 3) */}
+        {/* Notification count badge */}
         <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1">
           3
         </span>
@@ -33,4 +35,3 @@ const Header: React.FC = () => {
 };
 
 export default Header;
-
