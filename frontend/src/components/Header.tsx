@@ -10,11 +10,11 @@ const Header: React.FC = () => {
       {/* Navigation */}
       <nav className="flex gap-6 text-lg items-center">
         <a href="/" className="hover:underline">Home</a>
-        <a href="/cars" className="hover:underline">Cars</a>
-        <a href="/rentals" className="hover:underline">Rentals</a>
-        <a href="/rents" className="hover:underline">Rents</a>
-        <a href="/loginpage" className="hover:underline">Login</a>
-        <a href="/registerpage" className="hover:underline">Register</a>
+        <a href="/Cars" className="hover:underline">Cars</a>
+        <a href="/Rentals" className="hover:underline">Rentals</a>
+        <a href="/Rents" className="hover:underline">Rents</a>
+        <a href="/LoginPage" className="hover:underline">Login</a>
+        <a href="/RegisterPage" className="hover:underline">Register</a>
       </nav>
 
       {/* Notification icon */}
