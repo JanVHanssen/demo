@@ -23,10 +23,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.userDetailsService = userDetailsService;
     }
 
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-    String path = request.getRequestURI();
-    return path.startsWith("/auth"); // sla /auth/* routes over (login & register)
+   @Override
+protected boolean shouldNotFilter(HttpServletRequest request) {
+    String path = request.getServletPath();
+    System.out.println("shouldNotFilter path = " + path);
+    return path.startsWith("/auth");
 }
 
 
