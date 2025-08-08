@@ -3,7 +3,7 @@ import { fetchUserCars, deleteCar } from "../services/CarService";
 import Header from "../components/Header";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Car } from "../Types";
+import { Car } from "../Types"; 
 
 export default function CarsPage() {
   const [cars, setCars] = useState<Car[]>([]);
@@ -12,7 +12,7 @@ export default function CarsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Controleer of user is ingelogd met server validatie (zoals in Header)
+
   const checkAuthStatus = async () => {
     const token = localStorage.getItem('token');
     
@@ -56,11 +56,10 @@ export default function CarsPage() {
 
   const loadCars = async () => {
     try {
-      const data = await fetchUserCars(); // Gebruik fetchUserCars in plaats van fetchCars
+      const data = await fetchUserCars(); 
       setCars(data);
     } catch (err: any) {
       setError(err.message || "Kon auto's niet laden");
-      // Als de fout over authenticatie gaat, redirect naar login
       if (err.message.includes("ingelogd") || err.message.includes("token")) {
         router.push("/Login");
       }
@@ -95,7 +94,6 @@ export default function CarsPage() {
     );
   }
 
-  // Als niet geauthenticeerd, toon niets (redirect is al gebeurd)
   if (!isAuthenticated) {
     return null;
   }
@@ -138,7 +136,9 @@ export default function CarsPage() {
                     {car.foldingRearSeat ? "Ja" : "Nee"}
                   </p>
                   <p>Tow bar: {car.towbar ? "Ja" : "Nee"}</p>
+
                   <p>Available for rent: {car.available ? "Ja" : "Nee"}</p>
+
                   <p>Price per day: €{car.pricePerDay}</p>
                   <p className="text-sm text-gray-500 mt-1">
                     Eigenaar: {car.ownerEmail}
@@ -152,6 +152,7 @@ export default function CarsPage() {
                       Edit
                     </button>
                   </Link>
+
 
                   <button
                     onClick={() => handleDelete(car.id)}
