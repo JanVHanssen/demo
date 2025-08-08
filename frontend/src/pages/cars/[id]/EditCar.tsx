@@ -9,7 +9,7 @@ export default function EditCarPage() {
   const router = useRouter();
   const { id } = router.query;
 
-  const [car, setCar] = useState<Omit<Car, "id" | "rentals" | "rents" | "ownerEmail"> | null>(null);
+  const [car, setCar] = useState<Omit<Car, "id" | "ownerEmail"> | null>(null);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [message, setMessage] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -63,8 +63,8 @@ export default function EditCarPage() {
       try {
         const found = await fetchCarById(Number(id));
 
-const { rentals, ownerEmail, ...carData } = found;
-
+        // ✅ FIXED: Remove only ownerEmail, no rentals property
+        const { ownerEmail, ...carData } = found;
 
         setCar(carData);
       } catch (error) {
@@ -102,8 +102,6 @@ const { rentals, ownerEmail, ...carData } = found;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
-      {/* <Header /> */}
-
       <main className="flex-grow flex items-center justify-center">
         <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow-md w-full max-w-md">
           <h2 className="text-2xl font-bold mb-6 text-center">Bewerk auto</h2>
@@ -111,7 +109,6 @@ const { rentals, ownerEmail, ...carData } = found;
           {message && <p className="text-green-600 mb-4">{message}</p>}
           {errors.general && <p className="text-red-500 mb-4">{errors.general}</p>}
 
-          {/* Form inputs zoals in jouw originele code, onveranderd */}
           {/* Merk */}
           <input
             type="text"
@@ -183,6 +180,20 @@ const { rentals, ownerEmail, ...carData } = found;
             ))}
           </select>
 
+          {/* ✅ ADDED: Price per day */}
+          <label className="block mb-1">Prijs per dag (€)</label>
+          <input
+            type="number"
+            placeholder="Prijs per dag"
+            value={car.pricePerDay}
+            onChange={(e) => setCar({ ...car, pricePerDay: parseFloat(e.target.value) || 0 })}
+            className="w-full mb-4 p-2 border rounded"
+            min="0"
+            step="0.01"
+            required
+          />
+          {errors.pricePerDay && <p className="text-red-500 text-sm mb-2">{errors.pricePerDay}</p>}
+
           {/* Checkboxen */}
           <label className="inline-flex items-center mb-2">
             <input
@@ -194,21 +205,23 @@ const { rentals, ownerEmail, ...carData } = found;
             Inklapbare achterbank
           </label>
 
+          {/* ✅ FIXED: towBar → towbar */}
           <label className="inline-flex items-center mb-2">
             <input
               type="checkbox"
-              checked={car.towBar}
-              onChange={(e) => setCar({ ...car, towBar: e.target.checked })}
+              checked={car.towbar}
+              onChange={(e) => setCar({ ...car, towbar: e.target.checked })}
               className="mr-2"
             />
             Trekhaak
           </label>
 
+          {/* ✅ FIXED: availableForRent → available */}
           <label className="inline-flex items-center mb-6">
             <input
               type="checkbox"
-              checked={car.availableForRent}
-              onChange={(e) => setCar({ ...car, availableForRent: e.target.checked })}
+              checked={car.available}
+              onChange={(e) => setCar({ ...car, available: e.target.checked })}
               className="mr-2"
             />
             Beschikbaar voor verhuur
