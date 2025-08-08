@@ -1,10 +1,25 @@
 
 
-export interface AppUser {
+export interface Rent {
   id: number;
-  username: string;
+  carId: number;
+  startDate: string;           
+  endDate: string;                 
+  ownerEmail: string;
+  renterEmail: string;             
+  phoneNumber: string;              
+  nationalRegisterId: string;
+  birthDate: string;                
+  drivingLicenseNumber: string;    
+  car?: Car;                       
+}
+
+export interface RenterInfo {
   email: string;
-  password: string;
+  phoneNumber: string;
+  nationalRegisterId: string;
+  birthDate: string; // 'YYYY-MM-DD'
+  drivingLicenseNumber: string;
 }
 
 export interface Car {
@@ -12,25 +27,54 @@ export interface Car {
   brand: string;
   model: string;
   licensePlate: string;
+  type: string;
+  numberOfSeats: number;
+  numberOfChildSeats: number;
+  foldingRearSeat: boolean;
+  towbar: boolean;
+  pricePerDay: number;
+  available: boolean;
   ownerEmail: string;
-  rentals?: Rental[];
-  rents?: Rent[];
-}
-
-export interface Rent {
-  id: number;
-  car: Car;
-  startDate: string;  
-  endDate: string;
-  ownerEmail: string;
-  renterEmail: string;
 }
 
 export interface Rental {
   id: number;
   car: Car;
   startDate: string;
+  startTime: string;
   endDate: string;
-  city: string;
+  endTime: string;
+  pickupPoint: PickupPoint;
+  contact: Contact;
   ownerEmail: string;
 }
+
+export interface PickupPoint {
+  street: string;
+  number: string;
+  postal: string;
+  city: string;
+}
+
+export interface Contact {
+  phoneNumber: string;
+  email: string;
+}
+
+export interface AppUser {
+  id: number;
+  username: string;
+  email: string;
+  password: string;
+}
+
+export enum CarType {
+  SEDAN = 'SEDAN',
+  SUV = 'SUV',
+  HATCHBACK = 'HATCHBACK',
+  COUPE = 'COUPE',
+  CONVERTIBLE = 'CONVERTIBLE',
+  PICKUP_TRUCK = 'PICKUP_TRUCK'
+}
+
+

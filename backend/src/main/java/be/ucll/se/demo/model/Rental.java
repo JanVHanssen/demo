@@ -2,6 +2,7 @@ package be.ucll.se.demo.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Entity
 public class Rental {
@@ -10,31 +11,46 @@ public class Rental {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "car_id", nullable = false)
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "car_id")
     private Car car;
 
     private LocalDate startDate;
+    private LocalTime startTime;
+
     private LocalDate endDate;
-    private String city;
+    private LocalTime endTime;
+
+    @Embedded
+    private PickupPoint pickupPoint;
+
+    @Embedded
+    private Contact contact;
+
     private String ownerEmail;
 
-    // Constructors
     public Rental() {
     }
 
-    public Rental(Car car, LocalDate startDate, LocalDate endDate, String city, String ownerEmail) {
+    public Rental(Car car, LocalDate startDate, LocalTime startTime,
+            LocalDate endDate, LocalTime endTime,
+            PickupPoint pickupPoint, Contact contact, String ownerEmail) {
         this.car = car;
         this.startDate = startDate;
+        this.startTime = startTime;
         this.endDate = endDate;
-        this.city = city;
+        this.endTime = endTime;
+        this.pickupPoint = pickupPoint;
+        this.contact = contact;
         this.ownerEmail = ownerEmail;
     }
 
-    // Getters and Setters
-
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Car getCar() {
@@ -53,6 +69,14 @@ public class Rental {
         this.startDate = startDate;
     }
 
+    public LocalTime getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(LocalTime startTime) {
+        this.startTime = startTime;
+    }
+
     public LocalDate getEndDate() {
         return endDate;
     }
@@ -61,12 +85,28 @@ public class Rental {
         this.endDate = endDate;
     }
 
-    public String getCity() {
-        return city;
+    public LocalTime getEndTime() {
+        return endTime;
     }
 
-    public void setCity(String city) {
-        this.city = city;
+    public void setEndTime(LocalTime endTime) {
+        this.endTime = endTime;
+    }
+
+    public PickupPoint getPickupPoint() {
+        return pickupPoint;
+    }
+
+    public void setPickupPoint(PickupPoint pickupPoint) {
+        this.pickupPoint = pickupPoint;
+    }
+
+    public Contact getContact() {
+        return contact;
+    }
+
+    public void setContact(Contact contact) {
+        this.contact = contact;
     }
 
     public String getOwnerEmail() {

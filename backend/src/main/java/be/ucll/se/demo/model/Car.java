@@ -15,6 +15,17 @@ public class Car {
     private String licensePlate;
     private String ownerEmail;
 
+    @Enumerated(EnumType.STRING)
+    private CarType type;
+
+    private int numberOfSeats;
+    private int numberOfChildSeats;
+
+    private boolean foldingRearSeat;
+    private boolean towBar;
+
+    private boolean availableForRent;
+
     @OneToMany(mappedBy = "car", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Rental> rentals;
 
@@ -68,6 +79,54 @@ public class Car {
 
     public void setOwnerEmail(String ownerEmail) {
         this.ownerEmail = ownerEmail;
+    }
+
+    public CarType getType() {
+        return type;
+    }
+
+    public void setType(CarType type) {
+        this.type = type;
+    }
+
+    public int getNumberOfSeats() {
+        return numberOfSeats;
+    }
+
+    public void setNumberOfSeats(int numberOfSeats) {
+        this.numberOfSeats = numberOfSeats;
+    }
+
+    public int getNumberOfChildSeats() {
+        return numberOfChildSeats;
+    }
+
+    public void setNumberOfChildSeats(int numberOfChildSeats) {
+        this.numberOfChildSeats = numberOfChildSeats;
+    }
+
+    public boolean isFoldingRearSeat() {
+        return foldingRearSeat;
+    }
+
+    public void setFoldingRearSeat(boolean foldingRearSeat) {
+        this.foldingRearSeat = foldingRearSeat;
+    }
+
+    public boolean isTowBar() {
+        return towBar;
+    }
+
+    public void setTowBar(boolean towBar) {
+        this.towBar = towBar;
+    }
+
+    public boolean isAvailableForRent() {
+        return availableForRent;
+    }
+
+    public void setAvailableForRent(boolean availableForRent) {
+        this.availableForRent = availableForRent;
     }
 
     public List<Rental> getRentals() {
