@@ -12,8 +12,9 @@ export default function AddCarPage() {
   const [numberOfSeats, setNumberOfSeats] = useState(5);
   const [numberOfChildSeats, setNumberOfChildSeats] = useState(0);
   const [foldingRearSeat, setFoldingRearSeat] = useState(false);
-  const [towBar, setTowBar] = useState(false);
-  const [availableForRent, setAvailableForRent] = useState(true);
+  const [towbar, setTowbar] = useState(false); // ✅ FIXED: renamed from towBar to towbar
+  const [pricePerDay, setPricePerDay] = useState(0); // ✅ ADDED: missing field
+  const [available, setAvailable] = useState(true); // ✅ FIXED: renamed from availableForRent to available
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -69,7 +70,7 @@ export default function AddCarPage() {
     setMessage("");
     setErrors({});
 
-    // OwnerEmail wordt automatisch toegevoegd in de service
+
     const car = {
       brand,
       model,
@@ -78,8 +79,9 @@ export default function AddCarPage() {
       numberOfSeats,
       numberOfChildSeats,
       foldingRearSeat,
-      towBar,
-      availableForRent,
+      towbar,           
+      pricePerDay,      
+      available,        
     };
 
     try {
@@ -93,8 +95,9 @@ export default function AddCarPage() {
       setNumberOfSeats(5);
       setNumberOfChildSeats(0);
       setFoldingRearSeat(false);
-      setTowBar(false);
-      setAvailableForRent(true);
+      setTowbar(false);           
+      setPricePerDay(0);          
+      setAvailable(true);         
       
       // Redirect naar cars overzicht na 2 seconden
       setTimeout(() => {
@@ -129,7 +132,6 @@ export default function AddCarPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
-
       <main className="flex-grow flex items-center justify-center">
         <form
           onSubmit={handleSubmit}
@@ -215,6 +217,19 @@ export default function AddCarPage() {
             ))}
           </select>
 
+          <label className="block mb-1">Prijs per dag (€)</label>
+          <input
+            type="number"
+            placeholder="Prijs per dag"
+            value={pricePerDay}
+            onChange={(e) => setPricePerDay(parseFloat(e.target.value) || 0)}
+            className="w-full mb-4 p-2 border rounded"
+            min="0"
+            step="0.01"
+            required
+          />
+          {errors.pricePerDay && <p className="text-red-500 text-sm mb-2">{errors.pricePerDay}</p>}
+
           <div className="mb-4">
             <label className="inline-flex items-center">
               <input
@@ -231,8 +246,8 @@ export default function AddCarPage() {
             <label className="inline-flex items-center">
               <input
                 type="checkbox"
-                checked={towBar}
-                onChange={(e) => setTowBar(e.target.checked)}
+                checked={towbar}
+                onChange={(e) => setTowbar(e.target.checked)}
                 className="mr-2"
               />
               Trekhaak
@@ -243,8 +258,8 @@ export default function AddCarPage() {
             <label className="inline-flex items-center">
               <input
                 type="checkbox"
-                checked={availableForRent}
-                onChange={(e) => setAvailableForRent(e.target.checked)}
+                checked={available}
+                onChange={(e) => setAvailable(e.target.checked)}
                 className="mr-2"
               />
               Beschikbaar voor verhuur
