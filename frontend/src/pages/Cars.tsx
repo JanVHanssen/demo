@@ -3,7 +3,7 @@ import { fetchUserCars, deleteCar } from "../services/CarService";
 import Header from "../components/Header";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Car } from "../Types"; // Import de correcte Car type
+import { Car } from "../Types";
 
 export default function CarsPage() {
   const [cars, setCars] = useState<Car[]>([]);
@@ -37,7 +37,7 @@ export default function CarsPage() {
       if (response.ok && data.valid) {
         setIsAuthenticated(true);
       } else {
-        localStorage.removeItem('token');
+        localStorage.removeToken('token');
         setIsAuthenticated(false);
         router.push("/Login");
       }
@@ -102,8 +102,6 @@ export default function CarsPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-    
-      
       <main className="flex-grow p-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Cars</h1>
@@ -116,12 +114,12 @@ export default function CarsPage() {
 
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
-{cars.length === 0 ? (
-  <div className="flex justify-center items-center mt-20">
-    <p className="text-gray-600 text-lg">No cars yet</p>
-  </div>
-) : (
-  <ul className="space-y-6">
+        {cars.length === 0 ? (
+          <div className="flex justify-center items-center mt-20">
+            <p className="text-gray-600 text-lg">No cars yet</p>
+          </div>
+        ) : (
+          <ul className="space-y-6">
             {cars.map((car) => (
               <li
                 key={car.id}
@@ -139,8 +137,9 @@ export default function CarsPage() {
                     Folding rear seat:{" "}
                     {car.foldingRearSeat ? "Ja" : "Nee"}
                   </p>
-                  <p>Tow bar: {car.towBar ? "Ja" : "Nee"}</p>
-                  <p>Available for rent: {car.availableForRent ? "Ja" : "Nee"}</p>
+                  <p>Tow bar: {car.towbar ? "Ja" : "Nee"}</p>
+                  <p>Available for rent: {car.available ? "Ja" : "Nee"}</p>
+                  <p>Price per day: €{car.pricePerDay}</p>
                   <p className="text-sm text-gray-500 mt-1">
                     Eigenaar: {car.ownerEmail}
                   </p>
@@ -154,24 +153,12 @@ export default function CarsPage() {
                     </button>
                   </Link>
 
-
-
-                  {/* Delete button - alleen als er geen rentals zijn */}
-                  {(car.rentals?.length ?? 0) === 0 && (
-                    <button
-                      onClick={() => handleDelete(car.id)}
-                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                    >
-                      Delete
-                    </button>
-                  )}
-
-                  {/* Toon rentals info als die er zijn */}
-                  {(car.rentals?.length ?? 0) > 0 && (
-                    <div className="text-sm text-blue-600">
-                      {car.rentals.length} rental(s) actief
-                    </div>
-                  )}
+                  <button
+                    onClick={() => handleDelete(car.id)}
+                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                  >
+                    Delete
+                  </button>
                 </div>
               </li>
             ))}
