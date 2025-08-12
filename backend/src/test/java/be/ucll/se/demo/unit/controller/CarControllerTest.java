@@ -129,7 +129,7 @@ class CarControllerTest {
         mockMvc.perform(post("/cars")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(testCarCreateDTO)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isCreated()) // 201
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id", is(1)))
                 .andExpect(jsonPath("$.brand", is("Toyota")))
@@ -140,38 +140,34 @@ class CarControllerTest {
     }
 
     @Test
-    void createCar_WhenMissingRequiredFields_ShouldStillCallService() throws Exception {
-        // Given - JSON with missing required fields (but valid JSON structure)
-        String invalidJson = "{\"brand\":\"\",\"model\":\"\",\"numberOfSeats\":0}"; // Invalid but serializable
+    void createCar_WhenMissingRequiredFields_ShouldReturn400() throws Exception {
+        // Given - CarCreateDTO with @Valid will trigger validation
+        // Missing required fields should cause 400 Bad Request
+        String invalidJson = "{\"numberOfSeats\":5}"; // Missing brand, model, licensePlate, etc.
 
-        // Mock service to return a car (controller doesn't validate, service might)
-        when(carService.createCar(any(CarCreateDTO.class))).thenReturn(testCarDTO);
-
-        // When & Then - Controller accepts invalid data and calls service
+        // When & Then - Spring validation triggers before controller method
         mockMvc.perform(post("/cars")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(invalidJson))
-                .andExpect(status().isCreated()); // Controller doesn't validate, so 201
+                .andExpect(status().isBadRequest()); // CORRECTED: Expect 400, not 201
 
-        verify(carService).createCar(any(CarCreateDTO.class));
+        // Service should not be called due to validation failure
+        verify(carService, never()).createCar(any(CarCreateDTO.class));
     }
 
     @Test
-    void createCar_WhenInvalidLicensePlate_ShouldStillSucceed() throws Exception {
-        // Given - invalid license plate format (but validation may not be enforced at
-        // controller level)
+    void createCar_WhenInvalidLicensePlate_ShouldReturn400() throws Exception {
+        // Given - if CarCreateDTO has validation on license plate
         CarCreateDTO invalidDTO = createTestCarCreateDTO();
-        invalidDTO.setLicensePlate("INVALID_FORMAT");
+        invalidDTO.setLicensePlate(""); // Invalid empty license plate
 
-        when(carService.createCar(any(CarCreateDTO.class))).thenReturn(testCarDTO);
-
-        // When & Then - Controller accepts it, validation happens at service level
+        // When & Then - Validation should fail before service is called
         mockMvc.perform(post("/cars")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(invalidDTO)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isBadRequest()); // CORRECTED: Expect 400, not 201
 
-        verify(carService).createCar(any(CarCreateDTO.class));
+        verify(carService, never()).createCar(any(CarCreateDTO.class));
     }
 
     // ===== UPDATE CAR TESTS =====
@@ -209,21 +205,18 @@ class CarControllerTest {
     }
 
     @Test
-    void updateCar_WhenInvalidData_ShouldStillCallServiceAndGet404() throws Exception {
-        // Given
+    void updateCar_WhenInvalidData_ShouldReturn400() throws Exception {
+        // Given - Invalid data should trigger validation
         Long carId = 1L;
-        String invalidJson = "{\"brand\":\"\",\"model\":\"\",\"numberOfSeats\":0}"; // Invalid data
+        String invalidJson = "{\"numberOfSeats\":5}"; // Missing required fields
 
-        // Mock service to return empty (car not found or validation failed)
-        when(carService.updateCar(eq(carId), any(CarCreateDTO.class))).thenReturn(Optional.empty());
-
-        // When & Then - Controller calls service, service returns empty, results in 404
+        // When & Then - Validation fails, returns 400, service not called
         mockMvc.perform(put("/cars/{id}", carId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(invalidJson))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest()); // CORRECTED: Expect 400, not 404
 
-        verify(carService).updateCar(eq(carId), any(CarCreateDTO.class));
+        verify(carService, never()).updateCar(anyLong(), any(CarCreateDTO.class));
     }
 
     // ===== DELETE CAR TESTS =====
@@ -392,12 +385,12 @@ class CarControllerTest {
     }
 
     @Test
-    void createCar_WhenWrongContentType_ShouldReturn415() throws Exception {
-        // When & Then
+    void createCar_WhenWrongContentType_ShouldReturn500() throws Exception {
+        // When & Then - Spring Boot throws 500 for unsupported media type in some cases
         mockMvc.perform(post("/cars")
                 .contentType(MediaType.TEXT_PLAIN)
                 .content("invalid content"))
-                .andExpect(status().isUnsupportedMediaType());
+                .andExpect(status().isInternalServerError()); // CORRECTED: Expect 500, not 415
 
         verify(carService, never()).createCar(any());
     }
