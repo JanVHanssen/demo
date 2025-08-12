@@ -1,7 +1,9 @@
 name: Publish Backend & Deploy Frontend
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI - Tests"] # Wacht op test workflow
+    types: [completed]
     branches: [main]
 
 permissions:
@@ -17,8 +19,28 @@ env:
   AZURE_WEBAPP_NAME: jvhbackend
 
 jobs:
+  # Check of alle tests geslaagd zijn
+  check-tests:
+    runs-on: ubuntu-latest
+    outputs:
+      tests-passed: ${{ steps.check.outputs.tests-passed }}
+    steps:
+      - name: Check test results
+        id: check
+        run: |
+          if [ "${{ github.event.workflow_run.conclusion }}" == "success" ]; then
+            echo "✅ All tests passed, proceeding with deployment"
+            echo "tests-passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Tests failed, cancelling deployment"
+            echo "tests-passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
   bump-version:
     runs-on: ubuntu-latest
+    needs: [check-tests]
+    if: needs.check-tests.outputs.tests-passed == 'true'
     outputs:
       version: ${{ steps.set-version.outputs.version }}
     steps:
@@ -69,9 +91,16 @@ jobs:
           distribution: "microsoft"
           java-version: "21"
 
-      - name: Build JAR
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Build JAR (tests already passed)
         working-directory: ${{ env.PROJECT_DIR }}
-        run: mvn -B clean package -DskipTests
+        run: mvn -B clean package -DskipTests # Tests zijn al gedraaid en geslaagd
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
@@ -82,6 +111,7 @@ jobs:
   deploy-backend-to-azure:
     needs: [publish-backend, bump-version]
     runs-on: ubuntu-latest
+    environment: production # Voeg environment protection toe
     steps:
       - uses: actions/checkout@v4
 
@@ -116,17 +146,20 @@ jobs:
   deploy-frontend:
     needs: publish-backend
     runs-on: ubuntu-latest
+    environment: production # Voeg environment protection toe
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4 # Updated naar v4
         with:
           node-version: "18"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: frontend
-        run: npm install
+        run: npm ci # Gebruik npm ci voor reproducible builds
 
       - name: Deploy to Vercel
         working-directory: frontend
@@ -134,3 +167,6 @@ jobs:
           npm install -g vercel@latest
           vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
           vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

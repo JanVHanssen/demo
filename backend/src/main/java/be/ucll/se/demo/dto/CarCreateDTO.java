@@ -13,7 +13,7 @@ public class CarCreateDTO {
     private String model;
 
     @NotBlank(message = "License plate is required")
-    @Pattern(regexp = "^[A-Z]{1,3}-[0-9]{1,4}-[A-Z]{1,2}$", message = "Verkeerd kentekenformaat")
+    @Pattern(regexp = "^[A-Z0-9-]{2,10}$", message = "License plate must be 2-10 characters (letters, numbers, hyphens only)")
     private String licensePlate;
 
     @Email(message = "Invalid email format")

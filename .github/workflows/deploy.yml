@@ -5,25 +5,54 @@ env:
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["CI - Tests"] # Wacht op test workflow
+    types: [completed]
+    branches: [main]
 
 jobs:
+  # Check of tests geslaagd zijn
+  check-tests:
+    runs-on: ubuntu-latest
+    outputs:
+      tests-passed: ${{ steps.check.outputs.tests-passed }}
+    steps:
+      - name: Check test results
+        id: check
+        run: |
+          if [ "${{ github.event.workflow_run.conclusion }}" == "success" ]; then
+            echo "✅ Frontend tests passed, proceeding with deployment"
+            echo "tests-passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Tests failed, skipping frontend deployment"
+            echo "tests-passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
   Deploy-Production:
     runs-on: ubuntu-latest
+    needs: [check-tests]
+    if: needs.check-tests.outputs.tests-passed == 'true'
+    environment: production # Voeg environment protection toe
     defaults:
       run:
-        working-directory: frontend # 👈 Dit is cruciaal
+        working-directory: frontend
 
     steps:
-      - uses: actions/checkout@v4 # Gebruik de nieuwste versie
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4 # Updated naar v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
       - name: Install project dependencies
-        run: npm install
+        run: npm ci # Gebruik npm ci voor reproducible builds
 
       - name: Pull Vercel Environment Info
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
