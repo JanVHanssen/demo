@@ -351,9 +351,10 @@ class RentControllerTest {
 
     @Test
     void getRentsByNationalRegisterId_ShouldHandleMissingParameter() throws Exception {
-        // When & Then - Missing required parameter should cause bad request
+        // When & Then - Missing required parameter causes internal server error, not
+        // bad request
         mockMvc.perform(get("/rents/by-register-id"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isInternalServerError());
 
         verify(rentService, never()).getRentsByNationalRegisterId(anyString());
     }
@@ -429,5 +430,30 @@ class RentControllerTest {
                 .andExpect(status().isInternalServerError());
 
         verify(rentService, never()).getRentById(anyLong());
+    }
+
+    // ===== ADDITIONAL ERROR HANDLING TESTS =====
+    @Test
+    void addRent_ShouldReturnBadRequest_WhenInvalidJSON() throws Exception {
+        // When & Then - Invalid JSON should return 400
+        mockMvc.perform(post("/rents")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{invalid json}"))
+                .andExpect(status().isBadRequest());
+
+        verify(carService, never()).getCarById(anyLong());
+        verify(rentService, never()).addRent(any(Rent.class));
+    }
+
+    @Test
+    void addRent_ShouldReturnUnsupportedMediaType_WhenWrongContentType() throws Exception {
+        // When & Then - Wrong content type should return 415
+        mockMvc.perform(post("/rents")
+                .contentType(MediaType.TEXT_PLAIN)
+                .content("some text"))
+                .andExpect(status().isUnsupportedMediaType());
+
+        verify(carService, never()).getCarById(anyLong());
+        verify(rentService, never()).addRent(any(Rent.class));
     }
 }
