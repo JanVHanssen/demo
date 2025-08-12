@@ -73,9 +73,29 @@ class RentalControllerTest {
     private RentalCreateDTO createValidRentalCreateDTO() {
         RentalCreateDTO validDTO = new RentalCreateDTO();
         validDTO.setCarId(1L);
-        validDTO.setStartDate("15/01/2025"); // Try different date format
+        // Try different date formats to see what @ValidDate accepts
+        validDTO.setStartDate("2025-01-15"); // ISO format
         validDTO.setStartTime("10:00");
-        validDTO.setEndDate("20/01/2025");
+        validDTO.setEndDate("2025-01-20");
+        validDTO.setEndTime("10:00");
+        validDTO.setStreet("Main Street");
+        validDTO.setNumber("123");
+        validDTO.setPostal("1000");
+        validDTO.setCity("Brussels");
+        validDTO.setContactName("John Doe");
+        validDTO.setPhone("0123456789");
+        validDTO.setEmail("renter@example.com");
+        validDTO.setOwnerEmail("owner@example.com");
+        return validDTO;
+    }
+
+    // Try alternative valid DTO with different date format
+    private RentalCreateDTO createAlternativeValidDTO() {
+        RentalCreateDTO validDTO = new RentalCreateDTO();
+        validDTO.setCarId(1L);
+        validDTO.setStartDate("01/15/2025"); // US format
+        validDTO.setStartTime("10:00");
+        validDTO.setEndDate("01/20/2025");
         validDTO.setEndTime("10:00");
         validDTO.setStreet("Main Street");
         validDTO.setNumber("123");
@@ -205,6 +225,21 @@ class RentalControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{invalid json}"))
                 .andExpect(status().isInternalServerError()); // Changed from 400 to 500
+
+        verify(rentalService, never()).createRental(any(RentalCreateDTO.class));
+    }
+
+    @Test
+    void createRental_WhenValidationFails_ShouldReturn400() throws Exception {
+        // Given - Missing required field
+        testRentalCreateDTO.setEmail(null);
+        String jsonContent = objectMapper.writeValueAsString(testRentalCreateDTO);
+
+        // When & Then - @Valid should trigger validation
+        mockMvc.perform(post("/rentals")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonContent))
+                .andExpect(status().isBadRequest());
 
         verify(rentalService, never()).createRental(any(RentalCreateDTO.class));
     }
@@ -416,19 +451,4 @@ class RentalControllerTest {
         verify(rentalService).createRental(any(RentalCreateDTO.class));
     }
 
-    // ===== VALIDATION FAILURE TESTS =====
-    @Test
-    void createRental_WhenValidationFails_ShouldReturn400() throws Exception {
-        // Given - Use the default testRentalCreateDTO which fails validation
-        String jsonContent = objectMapper.writeValueAsString(testRentalCreateDTO);
-
-        // When & Then - @Valid should trigger validation failure
-        mockMvc.perform(post("/rentals")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonContent))
-                .andExpect(status().isBadRequest());
-
-        // Service should not be called due to validation failure
-        verify(rentalService, never()).createRental(any(RentalCreateDTO.class));
-    }
 }
