@@ -44,6 +44,17 @@
     </properties>
 
     <repositories>
+        <!-- Maven Central heeft prioriteit -->
+        <repository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo1.maven.org/maven2</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
+        
+        <!-- GitHub repository alleen voor jouw packages -->
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
@@ -62,154 +73,164 @@
         </repository>
     </distributionManagement>
 
-<dependencies>
-    <!-- Spring Boot core -->
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter</artifactId>
-    </dependency>
-
-    <!-- Spring Web (REST APIs) -->
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
-
-    <!-- Spring Data JPA (Database ORM) -->
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-data-jpa</artifactId>
-    </dependency>
-
-    <!-- H2 for in-memory DB -->
-    <dependency>
-        <groupId>com.h2database</groupId>
-        <artifactId>h2</artifactId>
-        <scope>runtime</scope>
-    </dependency>
-
-    <!-- Testing -->
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-test</artifactId>
-        <scope>test</scope>
-    </dependency>
-
-<dependency>
-    <groupId>org.mockito</groupId>
-    <artifactId>mockito-core</artifactId>
-    <scope>test</scope>
-</dependency>
-
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-validation</artifactId>
-</dependency>
-
-    <!-- JWT Dependencies -->
-    <dependency>
-        <groupId>io.jsonwebtoken</groupId>
-        <artifactId>jjwt-api</artifactId>
-        <version>0.11.5</version>
-    </dependency>
-    <dependency>
-        <groupId>io.jsonwebtoken</groupId>
-        <artifactId>jjwt-impl</artifactId>
-        <version>0.11.5</version>
-        <scope>runtime</scope>
-    </dependency>
-    <dependency>
-        <groupId>io.jsonwebtoken</groupId>
-        <artifactId>jjwt-jackson</artifactId> 
-        <version>0.11.5</version>
-        <scope>runtime</scope>
-    </dependency>
-    
-    <!-- Configuration processor -->
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-configuration-processor</artifactId>
-        <optional>true</optional>
-    </dependency>
-
-<dependency>
-    <groupId>jakarta.validation</groupId>
-    <artifactId>jakarta.validation-api</artifactId>
-    <version>3.0.2</version>
-</dependency>
-
-<dependency>
-    <groupId>org.postgresql</groupId>
-    <artifactId>postgresql</artifactId>
-    <scope>runtime</scope>
-</dependency>
-<dependency>
-    <groupId>org.flywaydb</groupId>
-    <artifactId>flyway-core</artifactId>
-</dependency>
-
-</dependencies>
-
-<build>
-    <plugins>
-        <plugin>
+    <dependencies>
+        <!-- Spring Boot core -->
+        <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-maven-plugin</artifactId>
-            <configuration>
-                <mainClass>be.ucll.se.demo.JanvhanssenBackendApplication</mainClass>
-                <layout>ZIP</layout> 
-            </configuration>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>repackage</goal>
-                    </goals>
-                </execution>
-            </executions>
-        </plugin>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
 
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-jar-plugin</artifactId>
-            <version>3.3.0</version>
-            <configuration>
-                <archive>
-                    <manifest>
-                        <mainClass>be.ucll.se.demo.JanvhanssenBackendApplication</mainClass>
-                    </manifest>
-                </archive>
-            </configuration>
-        </plugin>
+        <!-- Spring Web (REST APIs) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
 
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-deploy-plugin</artifactId>
-            <version>3.1.1</version>
-            <configuration>
-                <skip>false</skip>
-            </configuration>
-        </plugin>
+        <!-- Spring Data JPA (Database ORM) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
 
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-source-plugin</artifactId>
-            <version>3.3.0</version>
-            <executions>
-                <execution>
-                    <id>attach-sources</id>
-                    <goals>
-                        <goal>jar-no-fork</goal>
-                    </goals>
-                </execution>
-            </executions>
-        </plugin>
-    </plugins>
-    <resources>
-        <resource>
-            <directory>src/main/resources</directory>
-            <filtering>true</filtering>
-        </resource>
-    </resources>
-</build>
+        <!-- H2 for in-memory DB -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- JWT Dependencies -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.11.5</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.11.5</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId> 
+            <version>0.11.5</version>
+            <scope>runtime</scope>
+        </dependency>
+        
+        <!-- Configuration processor -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>3.0.2</version>
+        </dependency>
+
+        <!-- PostgreSQL Driver -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        
+        <!-- Flyway Core -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>10.18.0</version>
+        </dependency>
+        
+        <!-- Flyway PostgreSQL Support -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <version>10.18.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>be.ucll.se.demo.JanvhanssenBackendApplication</mainClass>
+                    <layout>ZIP</layout> 
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>be.ucll.se.demo.JanvhanssenBackendApplication</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>3.1.1</version>
+                <configuration>
+                    <skip>false</skip>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+    </build>
 
 </project>

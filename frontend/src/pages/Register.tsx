@@ -3,7 +3,6 @@ import { useRouter } from "next/router";
 import { GetStaticProps } from 'next';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import Header from "../components/Header";
 import { registerUser, UserRole } from "../services/AuthService";
 
 export default function Register() {
@@ -70,8 +69,6 @@ export default function Register() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header />
-
       <main className="flex-grow flex items-center justify-center px-4 py-12">
         <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-gray-200">
           {/* Header */}
