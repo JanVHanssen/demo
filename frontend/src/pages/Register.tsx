@@ -1,69 +1,211 @@
 import { useState } from "react";
+import { useRouter } from "next/router";
 import Header from "../components/Header";
-import { registerUser } from "../services/AuthService";
+import { registerUser, UserRole } from "../services/AuthService";
 
 export default function Register() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState<UserRole>("RENTER");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError("");
+    setMessage("");
+
+    // Basic validation
+    if (!username.trim()) {
+      setError("Gebruikersnaam is verplicht");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!email.trim()) {
+      setError("E-mail is verplicht");
+      setIsLoading(false);
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Wachtwoord moet minimaal 6 karakters lang zijn");
+      setIsLoading(false);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Wachtwoorden komen niet overeen");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const response = await registerUser(username, email, password);
+      const response = await registerUser(username, email, password, role);
       setMessage(response);
       setError("");
+      
+      // Redirect to login page after successful registration
+      setTimeout(() => {
+        router.push('/login?message=Registratie succesvol! Je kunt nu inloggen.');
+      }, 2000);
+      
     } catch (err: any) {
       setError(err.message || "Registratie mislukt");
       setMessage("");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
+      <Header />
 
-
-      <main className="flex-grow flex items-center justify-center">
+      <main className="flex-grow flex items-center justify-center px-4">
         <form
           onSubmit={handleSubmit}
-          className="bg-white p-8 rounded shadow-md w-full max-w-sm"
+          className="bg-white p-8 rounded-lg shadow-md w-full max-w-md"
         >
-          <h2 className="text-2xl font-bold mb-6 text-center">Registreer</h2>
-          {message && <p className="text-green-600 mb-4">{message}</p>}
-          {error && <p className="text-red-500 mb-4">{error}</p>}
+          <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+            Registreren bij Car4Rent
+          </h2>
+          
+          {message && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+              {message}
+            </div>
+          )}
+          
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+              {error}
+            </div>
+          )}
 
-          <input
-            type="text"
-            placeholder="Gebruikersnaam"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full mb-4 p-2 border rounded"
-          />
+          <div className="mb-4">
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+              Gebruikersnaam
+            </label>
+            <input
+              id="username"
+              type="text"
+              placeholder="Voer je gebruikersnaam in"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+          </div>
 
-          <input
-            type="email"
-            placeholder="E-mail"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full mb-4 p-2 border rounded"
-          />
+          <div className="mb-4">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              E-mailadres
+            </label>
+            <input
+              id="email"
+              type="email"
+              placeholder="je@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+          </div>
 
-          <input
-            type="password"
-            placeholder="Wachtwoord"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full mb-4 p-2 border rounded"
-          />
+          <div className="mb-4">
+            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+              Ik wil me registreren als
+            </label>
+            <select
+              id="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value as UserRole)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              required
+            >
+              <option value="RENTER">Huurder - Ik wil auto's huren</option>
+              <option value="OWNER">Verhuurder - Ik wil mijn auto's verhuren</option>
+            </select>
+            <p className="text-sm text-gray-500 mt-1">
+              {role === 'RENTER' 
+                ? 'Als huurder kun je auto\'s zoeken en huren van verhuurders.'
+                : 'Als verhuurder kun je je eigen auto\'s toevoegen en verhuren aan huurders.'
+              }
+            </p>
+          </div>
+
+          <div className="mb-4">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              Wachtwoord
+            </label>
+            <input
+              id="password"
+              type="password"
+              placeholder="Minimaal 6 karakters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+              minLength={6}
+            />
+          </div>
+
+          <div className="mb-6">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              Bevestig wachtwoord
+            </label>
+            <input
+              id="confirmPassword"
+              type="password"
+              placeholder="Herhaal je wachtwoord"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+          </div>
 
           <button
             type="submit"
-            className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700"
+            disabled={isLoading}
+            className={`w-full p-3 rounded-md text-white font-medium transition-colors ${
+              isLoading
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500'
+            }`}
           >
-            Registreer
+            {isLoading ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Registreren...
+              </span>
+            ) : (
+              'Account aanmaken'
+            )}
           </button>
+
+          <div className="text-center mt-6">
+            <p className="text-sm text-gray-600">
+              Heb je al een account?{' '}
+              <button
+                type="button"
+                onClick={() => router.push('/login')}
+                className="text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Log hier in
+              </button>
+            </p>
+          </div>
         </form>
       </main>
     </div>
