@@ -27,6 +27,15 @@ public class User {
     @JsonIgnore
     private String password;
 
+    // NEW: Role support
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
+    private Set<Role> roles = new HashSet<>();
+
+    // NEW: Account status
+    @Column(nullable = false)
+    private boolean enabled = true;
+
     public User() {
     }
 
@@ -37,6 +46,15 @@ public class User {
         this.password = password;
     }
 
+    // NEW: Constructor with role
+    public User(@NonNull String username, @NonNull String email, @NonNull String password, RoleName roleName) {
+        this.username = username;
+        this.email = email;
+        this.password = password;
+        // Role will be added via service
+    }
+
+    // Existing getters/setters
     public String getUserId() {
         return userId;
     }
@@ -72,14 +90,44 @@ public class User {
         this.password = password;
     }
 
+    // NEW: Role management methods
+    public Set<Role> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(Set<Role> roles) {
+        this.roles = roles;
+    }
+
+    public void addRole(Role role) {
+        this.roles.add(role);
+    }
+
+    public void removeRole(Role role) {
+        this.roles.remove(role);
+    }
+
+    public boolean hasRole(RoleName roleName) {
+        return roles.stream()
+                .anyMatch(role -> role.getName() == roleName);
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
     @Override
     public String toString() {
         return "User{" +
                 "userId='" + userId + '\'' +
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
+                ", roles=" + roles.size() + " roles" +
+                ", enabled=" + enabled +
                 '}';
     }
-
 }
