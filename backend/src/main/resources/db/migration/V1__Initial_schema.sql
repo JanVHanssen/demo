@@ -35,7 +35,20 @@ INSERT INTO roles (name) VALUES
     ('ACCOUNTANT')
 ON CONFLICT (name) DO NOTHING;
 
--- 5. Create cars table (if needed)
+-- 5. Create default admin user
+-- Password is 'admin123' - hashed with BCrypt
+INSERT INTO users (username, email, password) 
+VALUES ('admin', 'admin@car4rent.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iKZn9T92AiA3C8.6TjYUKUaZIgKu')
+ON CONFLICT (username) DO NOTHING;
+
+-- 6. Link admin user to ADMIN role
+INSERT INTO user_roles (user_id, role_id)
+SELECT u.id, r.id 
+FROM users u, roles r 
+WHERE u.username = 'admin' AND r.name = 'ADMIN'
+ON CONFLICT DO NOTHING;
+
+-- 7. Create cars table
 CREATE TABLE IF NOT EXISTS cars (
     id BIGSERIAL PRIMARY KEY,
     brand VARCHAR(100) NOT NULL,
@@ -53,7 +66,7 @@ CREATE TABLE IF NOT EXISTS cars (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 6. Create rentals table (if needed)
+-- 8. Create rentals table
 CREATE TABLE IF NOT EXISTS rentals (
     id BIGSERIAL PRIMARY KEY,
     car_id BIGINT NOT NULL,
@@ -73,7 +86,7 @@ CREATE TABLE IF NOT EXISTS rentals (
     FOREIGN KEY (car_id) REFERENCES cars(id) ON DELETE CASCADE
 );
 
--- 7. Create rents table (if needed)
+-- 9. Create rents table
 CREATE TABLE IF NOT EXISTS rents (
     id BIGSERIAL PRIMARY KEY,
     car_id BIGINT NOT NULL,
