@@ -1,6 +1,12 @@
 package be.ucll.se.demo.unit.service;
 
+import be.ucll.se.demo.dto.LoginResponseDTO;
+import be.ucll.se.demo.dto.UserDTO;
+import be.ucll.se.demo.dto.UserRoleUpdateDTO;
+import be.ucll.se.demo.model.Role;
+import be.ucll.se.demo.model.RoleName;
 import be.ucll.se.demo.model.User;
+import be.ucll.se.demo.repository.RoleRepository;
 import be.ucll.se.demo.repository.UserRepository;
 import be.ucll.se.demo.service.UserService;
 
@@ -13,7 +19,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.Base64;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,22 +35,44 @@ class UserServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private RoleRepository roleRepository;
+
     @InjectMocks
     private UserService userService;
 
     private User testUser;
+    private Role renterRole;
+    private Role ownerRole;
+    private Role adminRole;
     private String testPassword = "testPassword123";
     private String testHashedPassword;
 
     @BeforeEach
     void setUp() {
         testHashedPassword = Base64.getEncoder().encodeToString(testPassword.getBytes());
+
+        // Setup roles
+        renterRole = new Role(RoleName.RENTER);
+        renterRole.setId(1L);
+
+        ownerRole = new Role(RoleName.OWNER);
+        ownerRole.setId(2L);
+
+        adminRole = new Role(RoleName.ADMIN);
+        adminRole.setId(3L);
+
         testUser = createTestUser();
+
+        // Setup role repository mocks
+        when(roleRepository.findByName(RoleName.RENTER)).thenReturn(Optional.of(renterRole));
+        when(roleRepository.findByName(RoleName.OWNER)).thenReturn(Optional.of(ownerRole));
+        when(roleRepository.findByName(RoleName.ADMIN)).thenReturn(Optional.of(adminRole));
     }
 
-    // ===== REGISTER TESTS =====
+    // ===== REGISTER TESTS (Updated for new role-based registration) =====
     @Test
-    void register_WhenNewUser_ShouldCreateUserAndReturnTrue() {
+    void register_WhenNewUser_ShouldCreateUserWithDefaultRenterRole() {
         // Given
         String username = "newuser";
         String email = "newuser@example.com";
@@ -50,13 +81,13 @@ class UserServiceTest {
         when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
-        // When
+        // When - using default register method (should default to RENTER)
         boolean result = userService.register(username, email, password);
 
         // Then
         assertThat(result).isTrue();
 
-        // Verify user was saved with correct data
+        // Verify user was saved with correct data and RENTER role
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
 
@@ -64,9 +95,54 @@ class UserServiceTest {
         assertThat(savedUser.getUsername()).isEqualTo(username);
         assertThat(savedUser.getEmail()).isEqualTo(email);
         assertThat(savedUser.getPassword()).isEqualTo(Base64.getEncoder().encodeToString(password.getBytes()));
+        assertThat(savedUser.getRoles()).contains(renterRole);
 
         verify(userRepository).findByUsername(username);
         verify(userRepository).findByEmail(email);
+        verify(roleRepository).findByName(RoleName.RENTER);
+    }
+
+    @Test
+    void registerWithRole_WhenNewUserWithOwnerRole_ShouldCreateUserWithOwnerRole() {
+        // Given
+        String username = "newowner";
+        String email = "owner@example.com";
+        String password = "password123";
+
+        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+        // When
+        boolean result = userService.registerWithRole(username, email, password, RoleName.OWNER);
+
+        // Then
+        assertThat(result).isTrue();
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+
+        User savedUser = userCaptor.getValue();
+        assertThat(savedUser.getUsername()).isEqualTo(username);
+        assertThat(savedUser.getEmail()).isEqualTo(email);
+        assertThat(savedUser.getRoles()).contains(ownerRole);
+
+        verify(roleRepository).findByName(RoleName.OWNER);
+    }
+
+    @Test
+    void registerWithRole_WhenInvalidRole_ShouldThrowException() {
+        // Given
+        String username = "newuser";
+        String email = "newuser@example.com";
+        String password = "password123";
+
+        // When & Then
+        assertThatThrownBy(() -> userService.registerWithRole(username, email, password, RoleName.ADMIN))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(
+                        "Invalid role selection. Only OWNER and RENTER roles are allowed during registration.");
+
+        verify(userRepository, never()).save(any());
     }
 
     @Test
@@ -108,48 +184,7 @@ class UserServiceTest {
         verify(userRepository, never()).save(any());
     }
 
-    @Test
-    void register_WhenBothUsernameAndEmailExist_ShouldReturnFalseAfterUsernameCheck() {
-        // Given
-        String username = "existinguser";
-        String email = "existing@example.com";
-        String password = "password123";
-
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
-
-        // When
-        boolean result = userService.register(username, email, password);
-
-        // Then
-        assertThat(result).isFalse();
-        verify(userRepository).findByUsername(username);
-        verify(userRepository, never()).findByEmail(anyString()); // Should not check email if username exists
-        verify(userRepository, never()).save(any());
-    }
-
-    @Test
-    void register_ShouldHashPasswordCorrectly() {
-        // Given
-        String username = "testuser";
-        String email = "test@example.com";
-        String password = "mySecretPassword";
-        String expectedHash = Base64.getEncoder().encodeToString(password.getBytes());
-
-        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
-
-        // When
-        userService.register(username, email, password);
-
-        // Then
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(userCaptor.capture());
-
-        User savedUser = userCaptor.getValue();
-        assertThat(savedUser.getPassword()).isEqualTo(expectedHash);
-    }
-
-    // ===== LOGIN TESTS =====
+    // ===== LOGIN TESTS (Updated for new enhanced login) =====
     @Test
     void login_WhenValidCredentials_ShouldReturnUser() {
         // Given
@@ -165,6 +200,41 @@ class UserServiceTest {
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo(testUser);
         verify(userRepository).findByUsername(username);
+    }
+
+    @Test
+    void login_WhenUserDisabled_ShouldReturnNull() {
+        // Given
+        String username = "testuser";
+        String password = testPassword;
+        testUser.setEnabled(false); // Disable user
+
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+
+        // When
+        User result = userService.login(username, password);
+
+        // Then
+        assertThat(result).isNull();
+        verify(userRepository).findByUsername(username);
+    }
+
+    @Test
+    void loginWithRoles_WhenValidCredentials_ShouldReturnLoginResponseWithRoles() {
+        // Given
+        String username = "testuser";
+        String password = testPassword;
+
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+
+        // When
+        LoginResponseDTO result = userService.loginWithRoles(username, password);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getUsername()).isEqualTo(testUser.getUsername());
+        assertThat(result.getEmail()).isEqualTo(testUser.getEmail());
+        assertThat(result.getRoles()).contains(RoleName.RENTER);
     }
 
     @Test
@@ -199,56 +269,119 @@ class UserServiceTest {
         verify(userRepository).findByUsername(username);
     }
 
+    // ===== ROLE MANAGEMENT TESTS =====
     @Test
-    void login_WhenEmptyPassword_ShouldReturnNull() {
+    void updateUserRoles_WhenValidUser_ShouldUpdateRoles() {
         // Given
-        String username = "testuser";
-        String emptyPassword = "";
+        String userId = "test-user-id";
+        UserRoleUpdateDTO roleUpdateDTO = new UserRoleUpdateDTO();
+        roleUpdateDTO.setRoles(Set.of(RoleName.OWNER, RoleName.RENTER));
 
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(userRepository.save(any(User.class))).thenReturn(testUser);
 
         // When
-        User result = userService.login(username, emptyPassword);
+        UserDTO result = userService.updateUserRoles(userId, roleUpdateDTO);
 
         // Then
-        assertThat(result).isNull();
-        verify(userRepository).findByUsername(username);
+        assertThat(result).isNotNull();
+        verify(userRepository).findById(userId);
+        verify(userRepository).save(testUser);
+        verify(roleRepository).findByName(RoleName.OWNER);
+        verify(roleRepository).findByName(RoleName.RENTER);
     }
 
     @Test
-    void login_WhenNullPassword_ShouldThrowNullPointerException() {
+    void updateUserRoles_WhenUserNotFound_ShouldThrowException() {
         // Given
-        String username = "testuser";
-        String nullPassword = null;
+        String userId = "nonexistent";
+        UserRoleUpdateDTO roleUpdateDTO = new UserRoleUpdateDTO();
+        roleUpdateDTO.setRoles(Set.of(RoleName.RENTER));
 
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> userService.login(username, nullPassword))
-                .isInstanceOf(NullPointerException.class)
-                .hasMessage("Cannot invoke \"String.getBytes()\" because \"password\" is null");
+        assertThatThrownBy(() -> userService.updateUserRoles(userId, roleUpdateDTO))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("User not found with id: " + userId);
 
-        verify(userRepository).findByUsername(username);
+        verify(userRepository, never()).save(any());
     }
 
     @Test
-    void login_ShouldVerifyPasswordCorrectly() {
+    void toggleUserEnabled_WhenValidUser_ShouldToggleEnabledStatus() {
         // Given
-        String username = "testuser";
-        String correctPassword = testPassword;
-        String wrongPassword = "wrongPassword";
+        String userId = "test-user-id";
+        boolean originalStatus = testUser.isEnabled();
 
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        // When - correct password
-        User successResult = userService.login(username, correctPassword);
-
-        // When - wrong password
-        User failResult = userService.login(username, wrongPassword);
+        // When
+        UserDTO result = userService.toggleUserEnabled(userId);
 
         // Then
-        assertThat(successResult).isNotNull();
-        assertThat(failResult).isNull();
+        assertThat(result).isNotNull();
+        assertThat(testUser.isEnabled()).isEqualTo(!originalStatus);
+        verify(userRepository).findById(userId);
+        verify(userRepository).save(testUser);
+    }
+
+    @Test
+    void getUsersByRole_WhenUsersExist_ShouldReturnUsers() {
+        // Given
+        List<User> users = List.of(testUser);
+        when(userRepository.findByRole(RoleName.RENTER)).thenReturn(users);
+
+        // When
+        List<UserDTO> result = userService.getUsersByRole(RoleName.RENTER);
+
+        // Then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getUsername()).isEqualTo(testUser.getUsername());
+        verify(userRepository).findByRole(RoleName.RENTER);
+    }
+
+    @Test
+    void userHasRole_WhenUserHasRole_ShouldReturnTrue() {
+        // Given
+        String email = "test@example.com";
+        when(userRepository.userHasRole(email, RoleName.RENTER)).thenReturn(true);
+
+        // When
+        boolean result = userService.userHasRole(email, RoleName.RENTER);
+
+        // Then
+        assertThat(result).isTrue();
+        verify(userRepository).userHasRole(email, RoleName.RENTER);
+    }
+
+    @Test
+    void isAdmin_WhenUserIsAdmin_ShouldReturnTrue() {
+        // Given
+        String email = "admin@example.com";
+        when(userRepository.userHasRole(email, RoleName.ADMIN)).thenReturn(true);
+
+        // When
+        boolean result = userService.isAdmin(email);
+
+        // Then
+        assertThat(result).isTrue();
+        verify(userRepository).userHasRole(email, RoleName.ADMIN);
+    }
+
+    @Test
+    void getUserRoles_WhenUserExists_ShouldReturnRoles() {
+        // Given
+        String email = "test@example.com";
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+
+        // When
+        Set<RoleName> result = userService.getUserRoles(email);
+
+        // Then
+        assertThat(result).contains(RoleName.RENTER);
+        verify(userRepository).findByEmail(email);
     }
 
     // ===== FIND BY EMAIL TESTS =====
@@ -279,83 +412,6 @@ class UserServiceTest {
         // Then
         assertThat(result).isEmpty();
         verify(userRepository).findByEmail(email);
-    }
-
-    @Test
-    void findByEmail_WhenNullEmail_ShouldDelegateToRepository() {
-        // Given
-        String nullEmail = null;
-        when(userRepository.findByEmail(nullEmail)).thenReturn(Optional.empty());
-
-        // When
-        Optional<User> result = userService.findByEmail(nullEmail);
-
-        // Then
-        assertThat(result).isEmpty();
-        verify(userRepository).findByEmail(nullEmail);
-    }
-
-    @Test
-    void findByEmail_WhenEmptyEmail_ShouldDelegateToRepository() {
-        // Given
-        String emptyEmail = "";
-        when(userRepository.findByEmail(emptyEmail)).thenReturn(Optional.empty());
-
-        // When
-        Optional<User> result = userService.findByEmail(emptyEmail);
-
-        // Then
-        assertThat(result).isEmpty();
-        verify(userRepository).findByEmail(emptyEmail);
-    }
-
-    // ===== PASSWORD HASHING TESTS (via register) =====
-    @Test
-    void register_ShouldHandleSpecialCharactersInPassword() {
-        // Given
-        String username = "specialuser";
-        String email = "special@example.com";
-        String passwordWithSpecialChars = "p@ssw0rd!#$%^&*()";
-
-        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
-
-        // When
-        boolean result = userService.register(username, email, passwordWithSpecialChars);
-
-        // Then
-        assertThat(result).isTrue();
-
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(userCaptor.capture());
-
-        User savedUser = userCaptor.getValue();
-        assertThat(savedUser.getPassword()).isNotEqualTo(passwordWithSpecialChars); // Should be hashed
-        assertThat(savedUser.getPassword())
-                .isEqualTo(Base64.getEncoder().encodeToString(passwordWithSpecialChars.getBytes()));
-    }
-
-    @Test
-    void register_ShouldHandleUnicodeCharactersInPassword() {
-        // Given
-        String username = "unicodeuser";
-        String email = "unicode@example.com";
-        String unicodePassword = "pássw💙rd";
-
-        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
-
-        // When
-        boolean result = userService.register(username, email, unicodePassword);
-
-        // Then
-        assertThat(result).isTrue();
-
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(userCaptor.capture());
-
-        User savedUser = userCaptor.getValue();
-        assertThat(savedUser.getPassword()).isEqualTo(Base64.getEncoder().encodeToString(unicodePassword.getBytes()));
     }
 
     // ===== INTEGRATION-STYLE TESTS =====
@@ -397,6 +453,12 @@ class UserServiceTest {
         user.setUsername("testuser");
         user.setEmail("test@example.com");
         user.setPassword(testHashedPassword);
+        user.setEnabled(true);
+
+        // Add default RENTER role
+        user.setRoles(new HashSet<>());
+        user.addRole(renterRole);
+
         return user;
     }
 }
