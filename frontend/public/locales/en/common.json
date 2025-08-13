@@ -156,5 +156,36 @@
   "header": {
     "profile": "Profile",
     "settings": "Settings"
+  },
+   "admin": {
+    "users": {
+      "title": "User Management",
+      "description": "Manage all users, roles, and permissions",
+      "searchPlaceholder": "Search users...",
+      "allRoles": "All Roles",
+      "addUser": "Add User",
+      "totalUsers": "Total Users",
+      "activeUsers": "Active Users",
+      "user": "User",
+      "roles": "Roles",
+      "stats": "Stats",
+      "lastLogin": "Last Login",
+      "status": "Status",
+      "actions": "Actions",
+      "cars": "cars",
+      "rentals": "rentals",
+      "neverLoggedIn": "Never",
+      "active": "Active",
+      "inactive": "Inactive",
+      "editUser": "Edit User",
+      "username": "Username",
+      "activeAccount": "Active Account",
+      "noUsers": "No users found",
+      "noUsersDescription": "No users match your current filters",
+      "deleteConfirm": "Are you sure you want to delete this user?",
+      "loadError": "Could not load users",
+      "deleteError": "Could not delete user",
+      "toggleError": "Could not update user status"
+    }
   }
 }

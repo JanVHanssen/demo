@@ -156,5 +156,36 @@
     "header": {
     "profile": "Profil",
     "settings": "Paramètres"
+  },
+  "admin": {
+    "users": {
+      "title": "Gestion des Utilisateurs",
+      "description": "Gérer tous les utilisateurs, rôles et permissions",
+      "searchPlaceholder": "Rechercher des utilisateurs...",
+      "allRoles": "Tous les Rôles",
+      "addUser": "Ajouter Utilisateur",
+      "totalUsers": "Total Utilisateurs",
+      "activeUsers": "Utilisateurs Actifs",
+      "user": "Utilisateur",
+      "roles": "Rôles",
+      "stats": "Statistiques",
+      "lastLogin": "Dernière Connexion",
+      "status": "Statut",
+      "actions": "Actions",
+      "cars": "voitures",
+      "rentals": "locations",
+      "neverLoggedIn": "Jamais",
+      "active": "Actif",
+      "inactive": "Inactif",
+      "editUser": "Modifier Utilisateur",
+      "username": "Nom d'utilisateur",
+      "activeAccount": "Compte Actif",
+      "noUsers": "Aucun utilisateur trouvé",
+      "noUsersDescription": "Aucun utilisateur ne correspond à vos filtres",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cet utilisateur ?",
+      "loadError": "Impossible de charger les utilisateurs",
+      "deleteError": "Impossible de supprimer l'utilisateur",
+      "toggleError": "Impossible de mettre à jour le statut de l'utilisateur"
+    }
   }
 }

@@ -106,7 +106,7 @@ const Header: React.FC = () => {
       }
       
       if (canManageUsers()) {
-        baseItems.push({ href: "/dashboard/users", label: t('navigation.users'), show: true });
+        baseItems.push({ href: "/AdminUsers", label: t('navigation.users'), show: true });
       }
     } else {
       baseItems.push(
@@ -166,8 +166,8 @@ const Header: React.FC = () => {
 
           {/* Right side */}
           <div className="flex items-center space-x-4">
-            {/* Language Switcher */}
-            <div className="hidden sm:block">
+            {/* Language Switcher - More prominent */}
+            <div className="flex items-center">
               <LanguageSwitcher />
             </div>
 

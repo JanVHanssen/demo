@@ -156,5 +156,36 @@
   "header": {
     "profile": "Profiel", 
     "settings": "Instellingen"
+  },
+  "admin": {
+    "users": {
+      "title": "Gebruikersbeheer",
+      "description": "Beheer alle gebruikers, rollen en rechten",
+      "searchPlaceholder": "Zoek gebruikers...",
+      "allRoles": "Alle Rollen",
+      "addUser": "Gebruiker Toevoegen",
+      "totalUsers": "Totaal Gebruikers",
+      "activeUsers": "Actieve Gebruikers",
+      "user": "Gebruiker",
+      "roles": "Rollen",
+      "stats": "Statistieken",
+      "lastLogin": "Laatste Login",
+      "status": "Status",
+      "actions": "Acties",
+      "cars": "auto's",
+      "rentals": "verhuur",
+      "neverLoggedIn": "Nooit",
+      "active": "Actief",
+      "inactive": "Inactief",
+      "editUser": "Gebruiker Bewerken",
+      "username": "Gebruikersnaam",
+      "activeAccount": "Actief Account",
+      "noUsers": "Geen gebruikers gevonden",
+      "noUsersDescription": "Geen gebruikers voldoen aan je filters",
+      "deleteConfirm": "Weet je zeker dat je deze gebruiker wilt verwijderen?",
+      "loadError": "Kon gebruikers niet laden",
+      "deleteError": "Kon gebruiker niet verwijderen",
+      "toggleError": "Kon gebruikersstatus niet bijwerken"
+    }
   }
 }
