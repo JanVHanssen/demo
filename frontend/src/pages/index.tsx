@@ -18,11 +18,11 @@ const Home: React.FC = () => {
 
       <main className="flex-grow flex flex-col items-center justify-center p-8 text-center">
         <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          {t('welcome')} Car4Rent
+          {t('hero.welcome')} Car4Rent
         </h1>
         
         <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl">
-          {t('hero.description', 'De makkelijkste manier om auto\'s te huren en verhuren in jouw buurt.')}
+          {t('hero.description')}
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 mb-12">
@@ -30,14 +30,14 @@ const Home: React.FC = () => {
             href="/register?role=RENTER"
             className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
           >
-            🚗 {t('hero.rentCar', 'Auto Huren')}
+            🚗 {t('hero.rentCar')}
           </Link>
           
           <Link
             href="/register?role=OWNER"
             className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
           >
-            💰 {t('hero.rentOutCar', 'Auto Verhuren')}
+            💰 {t('hero.rentOutCar')}
           </Link>
         </div>
 
@@ -45,25 +45,25 @@ const Home: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl">
           <div className="text-center p-6">
             <div className="text-4xl mb-4">🔒</div>
-            <h3 className="text-xl font-semibold mb-2">{t('features.secure', 'Veilig')}</h3>
+            <h3 className="text-xl font-semibold mb-2">{t('features.secure')}</h3>
             <p className="text-gray-600 dark:text-gray-300">
-              {t('features.secureDesc', 'Alle gebruikers zijn geverifieerd')}
+              {t('features.secureDesc')}
             </p>
           </div>
           
           <div className="text-center p-6">
             <div className="text-4xl mb-4">⚡</div>
-            <h3 className="text-xl font-semibold mb-2">{t('features.fast', 'Snel')}</h3>
+            <h3 className="text-xl font-semibold mb-2">{t('features.fast')}</h3>
             <p className="text-gray-600 dark:text-gray-300">
-              {t('features.fastDesc', 'Boek binnen enkele minuten')}
+              {t('features.fastDesc')}
             </p>
           </div>
           
           <div className="text-center p-6">
             <div className="text-4xl mb-4">💯</div>
-            <h3 className="text-xl font-semibold mb-2">{t('features.reliable', 'Betrouwbaar')}</h3>
+            <h3 className="text-xl font-semibold mb-2">{t('features.reliable')}</h3>
             <p className="text-gray-600 dark:text-gray-300">
-              {t('features.reliableDesc', '24/7 ondersteuning')}
+              {t('features.reliableDesc')}
             </p>
           </div>
         </div>

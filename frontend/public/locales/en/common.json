@@ -11,6 +11,20 @@
     "register": "Register",
     "logout": "Logout"
   },
+  "hero": {
+    "welcome": "Welcome to",
+    "description": "The easiest way to rent and rent out cars in your neighborhood.",
+    "rentCar": "Rent a Car",
+    "rentOutCar": "Rent Out Car"
+  },
+  "features": {
+    "secure": "Secure",
+    "secureDesc": "All users are verified",
+    "fast": "Fast",
+    "fastDesc": "Book within minutes",
+    "reliable": "Reliable",
+    "reliableDesc": "24/7 support"
+  },
   "auth": {
     "welcome": "Welcome",
     "username": "Username",
@@ -82,7 +96,6 @@
     "selectCar": "Select a car",
     "invalidCar": "Invalid car selected",
     "fieldRequired": "{{field}} is required",
-    "pickupPoint": "Pickup point",
     "street": "Street",
     "number": "Number",
     "postal": "Postal code",
@@ -116,7 +129,6 @@
     "chooseRental": "Choose a rental...",
     "rentalDetails": "Rental Details",
     "renterData": "Renter data",
-    "selectRental": "Select a rental",
     "invalidRental": "Invalid rental selected",
     "rentalNotFound": "Selected rental not found",
     "noValidCar": "No valid car linked to this rental",
@@ -140,5 +152,9 @@
     "confirm": "Confirm",
     "yes": "Yes",
     "no": "No"
+  },
+  "header": {
+    "profile": "Profile",
+    "settings": "Settings"
   }
 }

@@ -11,6 +11,20 @@
     "register": "Registreren",
     "logout": "Uitloggen"
   },
+  "hero": {
+    "welcome": "Welkom bij",
+    "description": "De makkelijkste manier om auto's te huren en verhuren in jouw buurt.",
+    "rentCar": "Auto Huren",
+    "rentOutCar": "Auto Verhuren"
+  },
+  "features": {
+    "secure": "Veilig",
+    "secureDesc": "Alle gebruikers zijn geverifieerd",
+    "fast": "Snel",
+    "fastDesc": "Boek binnen enkele minuten",
+    "reliable": "Betrouwbaar",
+    "reliableDesc": "24/7 ondersteuning"
+  },
   "auth": {
     "welcome": "Welkom",
     "username": "Gebruikersnaam",
@@ -138,5 +152,9 @@
     "confirm": "Bevestigen",
     "yes": "Ja",
     "no": "Nee"
+  },
+  "header": {
+    "profile": "Profiel", 
+    "settings": "Instellingen"
   }
 }

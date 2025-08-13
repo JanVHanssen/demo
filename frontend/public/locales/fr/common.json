@@ -11,6 +11,20 @@
     "register": "S'inscrire",
     "logout": "Déconnexion"
   },
+  "hero": {
+    "welcome": "Bienvenue sur",
+    "description": "Le moyen le plus simple de louer et de mettre en location des voitures dans votre quartier.",
+    "rentCar": "Louer une Voiture",
+    "rentOutCar": "Mettre en Location"
+  },
+  "features": {
+    "secure": "Sécurisé",
+    "secureDesc": "Tous les utilisateurs sont vérifiés",
+    "fast": "Rapide",
+    "fastDesc": "Réservez en quelques minutes",
+    "reliable": "Fiable",
+    "reliableDesc": "Support 24h/24 et 7j/7"
+  },
   "auth": {
     "welcome": "Bienvenue",
     "username": "Nom d'utilisateur",
@@ -138,5 +152,9 @@
     "confirm": "Confirmer",
     "yes": "Oui",
     "no": "Non"
+  },
+    "header": {
+    "profile": "Profil",
+    "settings": "Paramètres"
   }
 }

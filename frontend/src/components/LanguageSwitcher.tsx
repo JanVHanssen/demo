@@ -11,8 +11,7 @@ interface Language {
 const languages: Language[] = [
   { code: 'nl', name: 'Nederlands', flag: '🇳🇱' },
   { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' }
 ];
 
 export default function LanguageSwitcher() {
