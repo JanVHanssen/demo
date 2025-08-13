@@ -24,10 +24,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -64,10 +65,11 @@ class UserServiceTest {
 
         testUser = createTestUser();
 
-        // Setup role repository mocks
-        when(roleRepository.findByName(RoleName.RENTER)).thenReturn(Optional.of(renterRole));
-        when(roleRepository.findByName(RoleName.OWNER)).thenReturn(Optional.of(ownerRole));
-        when(roleRepository.findByName(RoleName.ADMIN)).thenReturn(Optional.of(adminRole));
+        // Setup role repository mocks with lenient() to avoid unnecessary stubbing
+        // warnings
+        lenient().when(roleRepository.findByName(RoleName.RENTER)).thenReturn(Optional.of(renterRole));
+        lenient().when(roleRepository.findByName(RoleName.OWNER)).thenReturn(Optional.of(ownerRole));
+        lenient().when(roleRepository.findByName(RoleName.ADMIN)).thenReturn(Optional.of(adminRole));
     }
 
     // ===== REGISTER TESTS (Updated for new role-based registration) =====
