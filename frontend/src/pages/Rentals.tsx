@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getAllRentals, deleteRental } from "@/services/RentalService";
 import Link from "next/link";
+import { useTranslation } from "next-i18next";
 import { Rental } from "@/Types";
 import { useRouter } from "next/router";
 
@@ -8,8 +9,10 @@ export default function RentalsPage() {
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [error, setError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-      const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  const { t } = useTranslation('common');
+
   const checkAuthStatus = async () => {
     const token = localStorage.getItem("token");
 
@@ -56,31 +59,49 @@ export default function RentalsPage() {
       const data = await getAllRentals();
       setRentals(data);
     } catch (err) {
-      setError("Could not load rentals");
+      setError(t('rentals.loadError'));
     }
   };
 
   const handleDelete = async (id: number) => {
+    if (!window.confirm(t('rentals.deleteConfirm'))) {
+      return;
+    }
+
     try {
       await deleteRental(id);
       setRentals((prev) => prev.filter((r) => r.id !== id));
     } catch (err) {
-      alert("Delete failed");
+      alert(t('rentals.deleteFailed'));
     }
   };
 
   useEffect(() => {
-    loadRentals();
-  }, []);
+    if (isAuthenticated) {
+      loadRentals();
+    }
+  }, [isAuthenticated]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div>{t('common.loading')}</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <main className="flex-grow p-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Rentals</h1>
+          <h1 className="text-3xl font-bold">{t('navigation.rentals')}</h1>
           <Link href="/AddRental" passHref>
             <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              Add rental
+              {t('rentals.addRental')}
             </button>
           </Link>
         </div>
@@ -88,7 +109,7 @@ export default function RentalsPage() {
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
         {rentals.length === 0 ? (
-          <p className="text-gray-600 text-lg">No rentals yet</p>
+          <p className="text-gray-600 text-lg">{t('rentals.noRentals')}</p>
         ) : (
           <ul className="space-y-6">
             {rentals.map((rental) => (
@@ -98,23 +119,23 @@ export default function RentalsPage() {
               >
                 <div>
                   <p className="text-xl font-semibold">
-                    Auto: {rental.car?.brand} {rental.car?.model}
+                    {t('rentals.car')}: {rental.car?.brand} {rental.car?.model}
                   </p>
                   <p>
-                    Period: {rental.startDate} {rental.startTime} -{" "}
+                    {t('rentals.period')}: {rental.startDate} {rental.startTime} -{" "}
                     {rental.endDate} {rental.endTime}
                   </p>
                   <p>
-                    Pickup point: {rental.pickupPoint?.street}{" "}
+                    {t('rentals.pickupPoint')}: {rental.pickupPoint?.street}{" "}
                     {rental.pickupPoint?.number}, {rental.pickupPoint?.postal}{" "}
                     {rental.pickupPoint?.city}
                   </p>
                   <p>
-                    Contact: {rental.contact?.phoneNumber} |{" "}
+                    {t('rentals.contact')}: {rental.contact?.phoneNumber} |{" "}
                     {rental.contact?.email}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
-                    Owner: {rental.ownerEmail}
+                    {t('rentals.owner')}: {rental.ownerEmail}
                   </p>
                 </div>
 
@@ -123,7 +144,7 @@ export default function RentalsPage() {
                     onClick={() => rental.id && handleDelete(rental.id)}
                     className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
                   >
-                    Delete
+                    {t('common.delete')}
                   </button>
                 </div>
               </li>

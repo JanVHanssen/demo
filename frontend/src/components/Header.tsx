@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Bell, User, LogOut, Settings, BarChart3 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useTranslation } from 'next-i18next';
+import LanguageSwitcher from './LanguageSwitcher';
 import { 
   getCurrentUser, 
   isAuthenticated, 
@@ -26,10 +28,10 @@ interface UserInfo {
 const Header: React.FC = () => {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const { t } = useTranslation('common');
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is logged in when component mounts
     checkAuthStatus();
   }, []);
 
@@ -50,7 +52,7 @@ const Header: React.FC = () => {
         setUser(null);
       }
     } catch (error) {
-      console.error('Fout bij valideren token:', error);
+      console.error('Token validation error:', error);
       setUser(null);
     }
   };
@@ -66,11 +68,11 @@ const Header: React.FC = () => {
   };
 
   const getRoleDisplayName = (roles: string[]) => {
-    if (roles.includes('ADMIN')) return 'Beheerder';
-    if (roles.includes('ACCOUNTANT')) return 'Boekhouder';
-    if (roles.includes('OWNER')) return 'Verhuurder';
-    if (roles.includes('RENTER')) return 'Huurder';
-    return 'Gebruiker';
+    if (roles.includes('ADMIN')) return t('roles.admin');
+    if (roles.includes('ACCOUNTANT')) return t('roles.accountant');
+    if (roles.includes('OWNER')) return t('roles.owner');
+    if (roles.includes('RENTER')) return t('roles.renter');
+    return 'User';
   };
 
   const getRoleBadgeColor = (roles: string[]) => {
@@ -83,37 +85,34 @@ const Header: React.FC = () => {
 
   const getNavItems = () => {
     const baseItems = [
-      { href: "/", label: "Home", show: true },
+      { href: "/", label: t('navigation.home'), show: true },
     ];
 
     if (user) {
-      // Dashboard link for logged-in users
-      baseItems.push({ href: "/dashboard", label: "Dashboard", show: true });
+      baseItems.push({ href: "/dashboard", label: t('navigation.dashboard'), show: true });
       
-      // Role-specific navigation
       if (canManageCars()) {
-        baseItems.push({ href: "/Cars", label: "Auto's", show: true });
+        baseItems.push({ href: "/Cars", label: t('navigation.cars'), show: true });
       }
       
-      baseItems.push({ href: "/Rentals", label: "Verhuur", show: true });
+      baseItems.push({ href: "/Rentals", label: t('navigation.rentals'), show: true });
       
       if (isRenter() || isAdmin()) {
-        baseItems.push({ href: "/Rents", label: "Huren", show: true });
+        baseItems.push({ href: "/Rents", label: t('navigation.rent'), show: true });
       }
       
       if (canViewBookkeeping()) {
-        baseItems.push({ href: "/dashboard/bookkeeping", label: "Boekhouding", show: true });
+        baseItems.push({ href: "/dashboard/bookkeeping", label: t('navigation.bookkeeping'), show: true });
       }
       
       if (canManageUsers()) {
-        baseItems.push({ href: "/dashboard/users", label: "Gebruikers", show: true });
+        baseItems.push({ href: "/dashboard/users", label: t('navigation.users'), show: true });
       }
     } else {
-      // Public navigation for non-logged-in users
       baseItems.push(
-        { href: "/Cars", label: "Auto's", show: true },
-        { href: "/Login", label: "Login", show: true },
-        { href: "/Register", label: "Registreren", show: true }
+        { href: "/Cars", label: t('navigation.cars'), show: true },
+        { href: "/Login", label: t('navigation.login'), show: true },
+        { href: "/Register", label: t('navigation.register'), show: true }
       );
     }
 
@@ -152,8 +151,11 @@ const Header: React.FC = () => {
         ))}
       </nav>
 
-      {/* Right side - User info and notifications */}
+      {/* Right side - Language, User info and notifications */}
       <div className="flex items-center gap-4">
+        {/* Language Switcher */}
+        <LanguageSwitcher />
+
         {/* User section */}
         {user ? (
           <div className="relative">
@@ -166,7 +168,6 @@ const Header: React.FC = () => {
                 <span className="font-medium text-sm">{user.username}</span>
                 <span className="text-xs opacity-75">{getRoleDisplayName(user.roles)}</span>
               </div>
-              {/* Role indicator badge */}
               <div className={`w-2 h-2 rounded-full ${getRoleBadgeColor(user.roles)}`}></div>
             </button>
             
@@ -190,7 +191,7 @@ const Header: React.FC = () => {
                     onClick={() => setShowUserMenu(false)}
                   >
                     <BarChart3 size={16} />
-                    Dashboard
+                    {t('navigation.dashboard')}
                   </Link>
                   
                   <Link 
@@ -218,24 +219,23 @@ const Header: React.FC = () => {
                     className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                   >
                     <LogOut size={16} />
-                    Uitloggen
+                    {t('navigation.logout')}
                   </button>
                 </div>
               </div>
             )}
           </div>
         ) : (
-          // Show login button when not logged in
           <Link 
             href="/Login" 
             className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded-md transition-colors"
           >
             <User size={20} />
-            <span>Inloggen</span>
+            <span>{t('navigation.login')}</span>
           </Link>
         )}
 
-        {/* Notification icon - only show for logged-in users */}
+        {/* Notification icon */}
         {user && (
           <div className="relative">
             <button
@@ -244,7 +244,6 @@ const Header: React.FC = () => {
             >
               <Bell size={24} />
             </button>
-            {/* Notification count badge */}
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[1.25rem] h-5 flex items-center justify-center">
               3
             </span>

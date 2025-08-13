@@ -3,6 +3,7 @@ import { fetchUserRents, deleteRent } from "../services/RentService";
 import Header from "../components/Header";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useTranslation } from "next-i18next";
 import { Rent } from "../Types";
 
 export default function RentsPage() {
@@ -11,6 +12,7 @@ export default function RentsPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const { t } = useTranslation('common');
 
   const checkAuthStatus = async () => {
     const token = localStorage.getItem("token");
@@ -53,25 +55,24 @@ export default function RentsPage() {
     checkAuthStatus();
   }, []);
 
-
-const loadRents = async () => {
-  try {
-    const { fetchUserRentsWithCarDetails } = await import("../services/RentService");
-    const data = await fetchUserRentsWithCarDetails();
-    console.log("📥 Loaded rents with car details:", data);
-    setRents(data);
-  } catch (err: any) {
-    setError(err.message || "Kon huurdata niet laden");
-    console.error("❌ Error loading rents:", err);
-    
-    if (err.message.includes("token") || err.message.includes("ingelogd")) {
-      router.push("/Login");
+  const loadRents = async () => {
+    try {
+      const { fetchUserRentsWithCarDetails } = await import("../services/RentService");
+      const data = await fetchUserRentsWithCarDetails();
+      console.log("📥 Loaded rents with car details:", data);
+      setRents(data);
+    } catch (err: any) {
+      setError(err.message || t('common.error'));
+      console.error("❌ Error loading rents:", err);
+      
+      if (err.message.includes("token") || err.message.includes("ingelogd")) {
+        router.push("/Login");
+      }
     }
-  }
-};
+  };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Weet je zeker dat je deze huur wilt verwijderen?")) {
+    if (!window.confirm(t('rents.deleteConfirm'))) {
       return;
     }
 
@@ -79,7 +80,7 @@ const loadRents = async () => {
       await deleteRent(id);
       setRents((prev) => prev.filter((r) => r.id !== id));
     } catch (err) {
-      alert("Delete mislukt");
+      alert(t('rents.deleteFailed'));
     }
   };
 
@@ -92,7 +93,7 @@ const loadRents = async () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div>Loading...</div>
+        <div>{t('common.loading')}</div>
       </div>
     );
   }
@@ -105,21 +106,19 @@ const loadRents = async () => {
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <main className="flex-grow p-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Rents</h1>
+          <h1 className="text-3xl font-bold">{t('rents.title')}</h1>
           <Link href="/AddRent" passHref>
             <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              New rent
+              {t('rents.addRent')}
             </button>
           </Link>
         </div>
 
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
-
-
         {rents.length === 0 ? (
           <div className="flex justify-center items-center mt-20">
-            <p className="text-gray-600 text-lg">No rents yet</p>
+            <p className="text-gray-600 text-lg">{t('rents.noRents')}</p>
           </div>
         ) : (
           <ul className="space-y-6">
@@ -130,29 +129,28 @@ const loadRents = async () => {
               >
                 <div>
                   <p className="text-xl font-semibold mb-1">
-                    
                     {rent.car && `${rent.car.brand} ${rent.car.model} (${rent.car.licensePlate})`}
                   </p>
                   
-                  <p>Periode: {rent.startDate} – {rent.endDate}</p>
+                  <p>{t('rents.period')}: {rent.startDate} – {rent.endDate}</p>
                   <p className="text-sm text-gray-500 mt-1">
-                    Eigenaar: {rent.ownerEmail}
+                    {t('rents.owner')}: {rent.ownerEmail}
                   </p>
                   
                   <p className="text-sm text-gray-500">
-                    Jouw telefoonnummer: {rent.phoneNumber}
+                    {t('rents.phoneNumber')}: {rent.phoneNumber}
                   </p>
                   <p className="text-sm text-gray-500">
-                    Jouw email: {rent.renterEmail}
+                    {t('rents.email')}: {rent.renterEmail}
                   </p>
                   <p className="text-sm text-gray-500">
-                    Rijksregisternummer: {rent.nationalRegisterId}
+                    {t('rents.nationalId')}: {rent.nationalRegisterId}
                   </p>
                   <p className="text-sm text-gray-500">
-                    Geboortedatum: {rent.birthDate}
+                    {t('rents.birthDate')}: {rent.birthDate}
                   </p>
                   <p className="text-sm text-gray-500">
-                    Rijbewijs: {rent.drivingLicenseNumber}
+                    {t('rents.drivingLicense')}: {rent.drivingLicenseNumber}
                   </p>
                 </div>
 
@@ -161,7 +159,7 @@ const loadRents = async () => {
                     onClick={() => handleDelete(rent.id!)}
                     className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
                   >
-                    Delete
+                    {t('common.delete')}
                   </button>
                 </div>
               </li>

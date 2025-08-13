@@ -1,9 +1,13 @@
+// pages/Login.tsx
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import Header from "../components/Header";
+import { GetStaticProps } from 'next';
+import { useTranslation } from 'next-i18next';
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { loginUser } from "../services/AuthService";
 
 export default function Login() {
+  const { t } = useTranslation('common');
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -39,19 +43,19 @@ export default function Login() {
       
       // Priority-based redirect (Admin has highest priority)
       if (userRoles.includes('ADMIN')) {
-        router.push('/dashboard/admin');
+        router.push('/dashboard');
       } else if (userRoles.includes('ACCOUNTANT')) {
-        router.push('/dashboard/accountant');
+        router.push('/dashboard');
       } else if (userRoles.includes('OWNER')) {
-        router.push('/dashboard/owner');
+        router.push('/dashboard');
       } else if (userRoles.includes('RENTER')) {
-        router.push('/dashboard/renter');
+        router.push('/dashboard');
       } else {
         router.push('/dashboard');
       }
       
     } catch (err: any) {
-      setError(err.message || "Login mislukt");
+      setError(err.message || t('auth.invalidCredentials'));
     } finally {
       setIsLoading(false);
     }
@@ -59,15 +63,13 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
-      <Header />
-
       <main className="flex-grow flex items-center justify-center px-4">
         <form
           onSubmit={handleSubmit}
           className="bg-white p-8 rounded-lg shadow-md w-full max-w-md"
         >
           <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-            Inloggen
+            {t('navigation.login')}
           </h2>
           
           {successMessage && (
@@ -84,12 +86,12 @@ export default function Login() {
 
           <div className="mb-4">
             <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-              Gebruikersnaam
+              {t('auth.username')}
             </label>
             <input
               id="username"
               type="text"
-              placeholder="Voer je gebruikersnaam in"
+              placeholder={t('auth.username')}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -99,12 +101,12 @@ export default function Login() {
 
           <div className="mb-6">
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Wachtwoord
+              {t('auth.password')}
             </label>
             <input
               id="password"
               type="password"
-              placeholder="Voer je wachtwoord in"
+              placeholder={t('auth.password')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -127,29 +129,29 @@ export default function Login() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Inloggen...
+                {t('auth.loggingIn', 'Logging in...')}
               </span>
             ) : (
-              'Inloggen'
+              t('auth.loginButton')
             )}
           </button>
 
           <div className="text-center mt-6">
             <p className="text-sm text-gray-600">
-              Nog geen account?{' '}
+              {t('auth.noAccount', 'No account yet?')}{' '}
               <button
                 type="button"
                 onClick={() => router.push('/register')}
                 className="text-blue-600 hover:text-blue-700 font-medium"
               >
-                Registreer hier
+                {t('auth.registerHere', 'Register here')}
               </button>
             </p>
           </div>
 
           <div className="text-center mt-4">
             <p className="text-xs text-gray-500">
-              Admin login: admin@car4rent.com / admin123
+              {t('auth.adminLogin', 'Admin login')}: admin@car4rent.com / admin123
             </p>
           </div>
         </form>
@@ -157,3 +159,11 @@ export default function Login() {
     </div>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale || 'nl', ['common'])),
+    },
+  };
+};

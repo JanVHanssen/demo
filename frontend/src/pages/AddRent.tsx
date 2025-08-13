@@ -1,11 +1,13 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/router";
+import { useTranslation } from "next-i18next";
 import { addRent } from "@/services/RentService";
 import { getAllRentals } from "@/services/RentalService";
 import { Rental } from "@/Types";
 
 const AddRentPage = () => {
   const router = useRouter();
+  const { t } = useTranslation('common');
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -21,7 +23,6 @@ const AddRentPage = () => {
     drivingLicenseNumber: "",
   });
 
-  // ✅ Helper functie om email uit JWT te halen
   const getEmailFromToken = (token: string): string | null => {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
@@ -31,7 +32,6 @@ const AddRentPage = () => {
     }
   };
 
-  // Controleer of user is ingelogd met server validatie
   const checkAuthStatus = async () => {
     const token = localStorage.getItem('token');
      
@@ -56,7 +56,6 @@ const AddRentPage = () => {
       if (response.ok && data.valid) {
         setIsAuthenticated(true);
         
-        // ✅ Automatisch renterEmail invullen met ingelogde gebruiker
         const email = getEmailFromToken(token);
         if (email) {
           setForm(prev => ({ ...prev, renterEmail: email }));
@@ -87,116 +86,107 @@ const AddRentPage = () => {
           setRentals(data);
         } catch (error) {
           console.error("Fout bij ophalen van rentals:", error);
-          setError("Kon geen beschikbare auto's laden");
+          setError(t('rents.loadError'));
         }
       };
 
       loadRentals();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, t]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError(""); 
   };
 
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsSubmitting(true);
 
-
-const handleSubmit = async (e: FormEvent) => {
-  e.preventDefault();
-  setError("");
-  setIsSubmitting(true);
-
-  try {
-    // ✅ Verbeterde validatie
-    if (!form.rentalId) {
-      setError("Selecteer een rental");
-      return;
-    }
-
-    const rentalId = parseInt(form.rentalId);
-    if (isNaN(rentalId) || rentalId <= 0) {
-      setError("Ongeldige rental geselecteerd");
-      return;
-    }
-
-    // ✅ Vind de geselecteerde rental
-    const selectedRental = rentals.find(rental => rental.id === rentalId);
-    if (!selectedRental) {
-      setError("Geselecteerde rental niet gevonden");
-      return;
-    }
-
-    // ✅ DEBUG: Check wat er in selectedRental staat
-    console.log("🔍 Selected rental object:", selectedRental);
-    console.log("🔍 Selected rental ownerEmail:", selectedRental.ownerEmail);
-    console.log("🔍 Selected rental contact:", selectedRental.contact);
-
-    // ✅ Valideer dat selectedRental.car.id bestaat
-    if (!selectedRental.car?.id) {
-      setError("Geen geldige auto gekoppeld aan deze rental");
-      return;
-    }
-
-    let ownerEmailToUse = selectedRental.ownerEmail;
-    
-    // ✅ Check of ownerEmail wel een email is (bevat @)
-    if (!ownerEmailToUse.includes('@')) {
-      console.warn("⚠️  ownerEmail bevat geen @, probeer contact.email:", selectedRental.contact?.email);
-      
-      // Probeer contact.email als backup
-      if (selectedRental.contact?.email) {
-        ownerEmailToUse = selectedRental.contact.email;
-        console.log("✅ Gebruik contact.email als ownerEmail:", ownerEmailToUse);
-      } else {
-        setError("Geen geldige owner email gevonden - noch in ownerEmail noch in contact.email");
+    try {
+      if (!form.rentalId) {
+        setError(t('rents.selectRental'));
         return;
       }
+
+      const rentalId = parseInt(form.rentalId);
+      if (isNaN(rentalId) || rentalId <= 0) {
+        setError(t('rents.invalidRental'));
+        return;
+      }
+
+      const selectedRental = rentals.find(rental => rental.id === rentalId);
+      if (!selectedRental) {
+        setError(t('rents.rentalNotFound'));
+        return;
+      }
+
+      console.log("🔍 Selected rental object:", selectedRental);
+      console.log("🔍 Selected rental ownerEmail:", selectedRental.ownerEmail);
+      console.log("🔍 Selected rental contact:", selectedRental.contact);
+
+      if (!selectedRental.car?.id) {
+        setError(t('rents.noValidCar'));
+        return;
+      }
+
+      let ownerEmailToUse = selectedRental.ownerEmail;
+      
+      if (!ownerEmailToUse.includes('@')) {
+        console.warn("⚠️  ownerEmail bevat geen @, probeer contact.email:", selectedRental.contact?.email);
+        
+        if (selectedRental.contact?.email) {
+          ownerEmailToUse = selectedRental.contact.email;
+          console.log("✅ Gebruik contact.email als ownerEmail:", ownerEmailToUse);
+        } else {
+          setError(t('rents.noValidOwnerEmail'));
+          return;
+        }
+      }
+
+      const rentData = {
+        carId: Number(selectedRental.car.id),    
+        startDate: selectedRental.startDate,     
+        endDate: selectedRental.endDate,         
+        ownerEmail: ownerEmailToUse,            
+        renterEmail: form.renterEmail.trim(),    
+        phoneNumber: form.phoneNumber.trim(),
+        nationalRegisterId: form.nationalRegisterId.trim(),
+        birthDate: form.birthDate,
+        drivingLicenseNumber: form.drivingLicenseNumber.trim(),
+      };
+
+      console.log("🔍 Final rentData:", rentData);
+      console.log("🔍 ownerEmail final:", rentData.ownerEmail);
+      
+      if (!rentData.carId || rentData.carId <= 0) {
+        setError(t('rents.invalidCarId'));
+        return;
+      }
+
+      if (!rentData.ownerEmail || !rentData.ownerEmail.includes('@')) {
+        setError(t('rents.noValidOwnerEmail'));
+        return;
+      }
+
+      await addRent(rentData);
+      
+      alert(t('rents.addSuccess'));
+      router.push("/rents");
+
+    } catch (err: any) {
+      console.error("❌ Submit error:", err);
+      setError(err.message || t('rents.addError'));
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const rentData = {
-      carId: Number(selectedRental.car.id),    
-      startDate: selectedRental.startDate,     
-      endDate: selectedRental.endDate,         
-      ownerEmail: ownerEmailToUse,            
-      renterEmail: form.renterEmail.trim(),    
-      phoneNumber: form.phoneNumber.trim(),
-      nationalRegisterId: form.nationalRegisterId.trim(),
-      birthDate: form.birthDate,
-      drivingLicenseNumber: form.drivingLicenseNumber.trim(),
-    };
-
-    // ✅ Extra validatie voor rentData
-    console.log("🔍 Final rentData:", rentData);
-    console.log("🔍 ownerEmail final:", rentData.ownerEmail);
-    
-    if (!rentData.carId || rentData.carId <= 0) {
-      setError("Ongeldige auto ID");
-      return;
-    }
-
-    if (!rentData.ownerEmail || !rentData.ownerEmail.includes('@')) {
-      setError("Geen geldige eigenaar email gevonden");
-      return;
-    }
-
-    await addRent(rentData);
-    
-    alert("Rent succesvol toegevoegd!");
-    router.push("/rents");
-
-  } catch (err: any) {
-    console.error("❌ Submit error:", err);
-    setError(err.message || "Fout bij toevoegen van rent");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>Laden...</p>
+        <p>{t('common.loading')}</p>
       </div>
     );
   }
@@ -207,12 +197,12 @@ const handleSubmit = async (e: FormEvent) => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 text-lg mb-4">Er zijn geen beschikbare auto's om te huren.</p>
+          <p className="text-gray-600 text-lg mb-4">{t('rents.noCarsAvailable')}</p>
           <button 
             onClick={() => router.push("/rentals")}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
-            Bekijk alle rentals
+            {t('rents.viewAllRentals')}
           </button>
         </div>
       </div>
@@ -221,9 +211,8 @@ const handleSubmit = async (e: FormEvent) => {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Nieuwe Rent toevoegen</h1>
+      <h1 className="text-2xl font-bold mb-6">{t('rents.addRent')}</h1>
       
-      {/* ✅ Error display */}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
@@ -233,7 +222,7 @@ const handleSubmit = async (e: FormEvent) => {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Selecteer een rental
+            {t('rents.selectRental')}
           </label>
           <select
             name="rentalId"
@@ -242,29 +231,28 @@ const handleSubmit = async (e: FormEvent) => {
             required
             className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">Kies een rental...</option>
+            <option value="">{t('rents.chooseRental')}</option>
             {rentals.map((rental) => (
               <option key={rental.id} value={rental.id}>
                 {rental.car.brand} {rental.car.model} ({rental.car.licensePlate}) 
-                - {rental.startDate} tot {rental.endDate}
-                - Eigenaar: {rental.ownerEmail}
+                - {rental.startDate} {t('rents.to')} {rental.endDate}
+                - {t('rents.owner')}: {rental.ownerEmail}
               </option>
             ))}
           </select>
         </div>
 
-        {/* ✅ Toon rental details als er een geselecteerd is */}
         {form.rentalId && (
           <div className="bg-gray-50 p-4 rounded border">
-            <h3 className="font-medium text-gray-900 mb-2">Rental Details</h3>
+            <h3 className="font-medium text-gray-900 mb-2">{t('rents.rentalDetails')}</h3>
             {(() => {
               const selected = rentals.find(r => r.id === parseInt(form.rentalId));
               return selected ? (
                 <div className="text-sm text-gray-600">
-                  <p><strong>Auto:</strong> {selected.car.brand} {selected.car.model}</p>
-                  <p><strong>Kenteken:</strong> {selected.car.licensePlate}</p>
-                  <p><strong>Periode:</strong> {selected.startDate} - {selected.endDate}</p>
-                  <p><strong>Eigenaar:</strong> {selected.ownerEmail}</p>
+                  <p><strong>{t('rents.car')}:</strong> {selected.car.brand} {selected.car.model}</p>
+                  <p><strong>{t('cars.licensePlate')}:</strong> {selected.car.licensePlate}</p>
+                  <p><strong>{t('rents.period')}:</strong> {selected.startDate} - {selected.endDate}</p>
+                  <p><strong>{t('rents.owner')}:</strong> {selected.ownerEmail}</p>
                 </div>
               ) : null;
             })()}
@@ -272,12 +260,12 @@ const handleSubmit = async (e: FormEvent) => {
         )}
 
         <div className="border-t pt-4">
-          <h2 className="font-semibold text-gray-900 mb-4">Gegevens huurder</h2>
+          <h2 className="font-semibold text-gray-900 mb-4">{t('rents.renterData')}</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
+                {t('auth.email')}
               </label>
               <input 
                 type="email" 
@@ -292,7 +280,7 @@ const handleSubmit = async (e: FormEvent) => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Telefoonnummer
+                {t('rents.phoneNumber')}
               </label>
               <input 
                 type="tel" 
@@ -307,7 +295,7 @@ const handleSubmit = async (e: FormEvent) => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Rijksregisternummer
+                {t('rents.nationalId')}
               </label>
               <input 
                 type="text" 
@@ -322,7 +310,7 @@ const handleSubmit = async (e: FormEvent) => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Geboortedatum
+                {t('rents.birthDate')}
               </label>
               <input 
                 type="date" 
@@ -336,7 +324,7 @@ const handleSubmit = async (e: FormEvent) => {
             
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Rijbewijsnummer
+                {t('rents.drivingLicense')}
               </label>
               <input 
                 type="text" 
@@ -361,7 +349,7 @@ const handleSubmit = async (e: FormEvent) => {
                 : 'bg-blue-600 hover:bg-blue-700'
             }`}
           >
-            {isSubmitting ? 'Bezig met toevoegen...' : 'Rent toevoegen'}
+            {isSubmitting ? t('rents.adding') : t('rents.addRent')}
           </button>
           
           <button 
@@ -369,7 +357,7 @@ const handleSubmit = async (e: FormEvent) => {
             onClick={() => router.push("/rents")}
             className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600"
           >
-            Annuleren
+            {t('common.cancel')}
           </button>
         </div>
       </form>

@@ -1,14 +1,15 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/router";
+import { useTranslation } from "next-i18next";
 import { addRental } from "@/services/RentalService";
 import { fetchCarsByOwner } from "@/services/CarService";
 import { Car } from "../Types";
 
 const AddRental = () => {
   const router = useRouter();
+  const { t } = useTranslation('common');
   const [cars, setCars] = useState<Car[]>([]);
   
-  // ✅ Updated form state - voegt contactName toe
   const [form, setForm] = useState({
     carId: "",
     startDate: "",
@@ -19,7 +20,7 @@ const AddRental = () => {
     pickupNumber: "",
     pickupPostal: "",
     pickupCity: "",
-    contactName: "",        // ✅ Nieuw veld toegevoegd
+    contactName: "",
     contactPhoneNumber: "",
     contactEmail: "",
     ownerEmail: "",
@@ -30,7 +31,6 @@ const AddRental = () => {
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  // Controleer of user is ingelogd met server validatie (zoals in Header)
   const checkAuthStatus = async () => {
     const token = localStorage.getItem('token');
     
@@ -72,7 +72,6 @@ const AddRental = () => {
     checkAuthStatus();
   }, []);
 
-  // Helper functie om email uit JWT te halen
   const getEmailFromToken = (token: string): string | null => {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
@@ -82,17 +81,16 @@ const AddRental = () => {
     }
   };
 
-  // Auto's ophalen zodra je weet dat gebruiker ingelogd is
   useEffect(() => {
     if (!isAuthenticated) return;
 
     const fetchCars = async () => {
       try {
         const token = localStorage.getItem("token");
-        if (!token) throw new Error("Geen token gevonden");
+        if (!token) throw new Error(t('rentals.noTokenFound'));
 
         const email = getEmailFromToken(token);
-        if (!email) throw new Error("Kon geen e-mailadres uit token halen");
+        if (!email) throw new Error(t('rentals.noEmailFromToken'));
 
         const cars = await fetchCarsByOwner(email);
         setCars(cars);
@@ -102,30 +100,26 @@ const AddRental = () => {
     };
 
     fetchCars();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, t]);
 
-  // ✅ Handle form changes
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // ✅ Updated handleSubmit - werkt met je backend
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // Validatie
     if (!form.carId) {
-      alert("Selecteer een auto");
+      alert(t('rentals.selectCar'));
       return;
     }
 
     const carId = parseInt(form.carId);
     if (isNaN(carId) || carId <= 0) {
-      alert("Ongeldige auto geselecteerd");
+      alert(t('rentals.invalidCar'));
       return;
     }
 
-    // ✅ Updated required fields - inclusief contactName
     const requiredFields = [
       'startDate', 'startTime', 'endDate', 'endTime',
       'pickupStreet', 'pickupNumber', 'pickupPostal', 'pickupCity',
@@ -134,12 +128,11 @@ const AddRental = () => {
 
     for (const field of requiredFields) {
       if (!form[field as keyof typeof form]) {
-        alert(`${field} is verplicht`);
+        alert(t('rentals.fieldRequired', { field }));
         return;
       }
     }
 
-    // ✅ Data voorbereiden voor de service
     const formData = {
       carId: form.carId,
       startDate: form.startDate,
@@ -153,7 +146,7 @@ const AddRental = () => {
       contactName: form.contactName,
       contactPhoneNumber: form.contactPhoneNumber,
       contactEmail: form.contactEmail,
-      ownerEmail: form.ownerEmail, // Dit wordt overschreven in de service
+      ownerEmail: form.ownerEmail,
     };
 
     console.log("Form data to submit:", formData);
@@ -161,7 +154,7 @@ const AddRental = () => {
 
     try {
       await addRental(formData);
-      alert("Rental succesvol toegevoegd!");
+      alert(t('rentals.addSuccess'));
       router.push("/Rentals");
     } catch (err: any) {
       console.error("Fout bij toevoegen rental:", err);
@@ -169,33 +162,31 @@ const AddRental = () => {
         router.push("/Login");
         return;
       }
-      alert(`Fout bij toevoegen rental: ${err.message}`);
+      alert(t('rentals.addError', { error: err.message }));
     }
   };
 
-  // Toon loading tijdens authenticatie check
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div>Laden...</div>
+        <div>{t('common.loading')}</div>
       </div>
     );
   }
 
-  // Als niet geauthenticeerd, toon niets (redirect is al gebeurd)
   if (!isAuthenticated) return null;
   
   if (cars.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>Je hebt nog geen auto's toegevoegd. Voeg eerst een auto toe.</p>
+        <p>{t('rentals.noCarsAdded')}</p>
       </div>
     );
   }
 
   return (
     <div className="p-6 max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Nieuwe Rental toevoegen</h1>
+      <h1 className="text-2xl font-bold mb-4">{t('rentals.addRental')}</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <select
           name="carId"
@@ -204,7 +195,7 @@ const AddRental = () => {
           required
           className="border p-2 w-full"
         >
-          <option value="">Selecteer een auto</option>
+          <option value="">{t('rentals.selectCar')}</option>
           {cars.map((car) => (
             <option key={car.id} value={car.id}>
               {car.brand} {car.model} ({car.licensePlate})
@@ -245,11 +236,11 @@ const AddRental = () => {
           className="border p-2 w-full" 
         />
 
-        <h2 className="font-semibold">Ophaalpunt</h2>
+        <h2 className="font-semibold">{t('rentals.pickupPoint')}</h2>
         <input 
           type="text" 
           name="pickupStreet" 
-          placeholder="Straat" 
+          placeholder={t('rentals.street')} 
           value={form.pickupStreet} 
           onChange={handleChange} 
           required 
@@ -258,7 +249,7 @@ const AddRental = () => {
         <input 
           type="text" 
           name="pickupNumber" 
-          placeholder="Nummer" 
+          placeholder={t('rentals.number')} 
           value={form.pickupNumber} 
           onChange={handleChange} 
           required 
@@ -267,7 +258,7 @@ const AddRental = () => {
         <input 
           type="text" 
           name="pickupPostal" 
-          placeholder="Postcode" 
+          placeholder={t('rentals.postal')} 
           value={form.pickupPostal} 
           onChange={handleChange} 
           required 
@@ -276,19 +267,18 @@ const AddRental = () => {
         <input 
           type="text" 
           name="pickupCity" 
-          placeholder="Stad" 
+          placeholder={t('rentals.city')} 
           value={form.pickupCity} 
           onChange={handleChange} 
           required 
           className="border p-2 w-full" 
         />
 
-        <h2 className="font-semibold">Contactgegevens</h2>
-        {/* ✅ Nieuw contactName veld */}
+        <h2 className="font-semibold">{t('rentals.contactInfo')}</h2>
         <input 
           type="text" 
           name="contactName" 
-          placeholder="Naam" 
+          placeholder={t('rentals.name')} 
           value={form.contactName} 
           onChange={handleChange} 
           required 
@@ -297,7 +287,7 @@ const AddRental = () => {
         <input 
           type="tel" 
           name="contactPhoneNumber" 
-          placeholder="Telefoonnummer" 
+          placeholder={t('rentals.phoneNumber')} 
           value={form.contactPhoneNumber} 
           onChange={handleChange} 
           required 
@@ -306,7 +296,7 @@ const AddRental = () => {
         <input 
           type="email" 
           name="contactEmail" 
-          placeholder="E-mail" 
+          placeholder={t('auth.email')} 
           value={form.contactEmail} 
           onChange={handleChange} 
           required 
@@ -317,7 +307,7 @@ const AddRental = () => {
           type="submit" 
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          Toevoegen
+          {t('rentals.add')}
         </button>
       </form>
     </div>

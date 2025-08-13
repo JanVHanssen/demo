@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "next-i18next";
 import Header from "../components/Header";
 import { addCar } from "../services/CarService";
 import { CarType } from "../Types";
 import { useRouter } from "next/router";
 
 export default function AddCarPage() {
+  const { t } = useTranslation('common');
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
@@ -12,9 +14,9 @@ export default function AddCarPage() {
   const [numberOfSeats, setNumberOfSeats] = useState(5);
   const [numberOfChildSeats, setNumberOfChildSeats] = useState(0);
   const [foldingRearSeat, setFoldingRearSeat] = useState(false);
-  const [towbar, setTowbar] = useState(false); // ✅ FIXED: renamed from towBar to towbar
-  const [pricePerDay, setPricePerDay] = useState(0); // ✅ ADDED: missing field
-  const [available, setAvailable] = useState(true); // ✅ FIXED: renamed from availableForRent to available
+  const [towbar, setTowbar] = useState(false);
+  const [pricePerDay, setPricePerDay] = useState(0);
+  const [available, setAvailable] = useState(true);
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -23,7 +25,6 @@ export default function AddCarPage() {
 
   const seatOptions = Array.from({ length: 9 }, (_, i) => i + 1);
 
-  // Controleer of user is ingelogd met server validatie (zoals in Header)
   const checkAuthStatus = async () => {
     const token = localStorage.getItem('token');
     
@@ -70,7 +71,6 @@ export default function AddCarPage() {
     setMessage("");
     setErrors({});
 
-
     const car = {
       brand,
       model,
@@ -86,7 +86,8 @@ export default function AddCarPage() {
 
     try {
       await addCar(car);
-      setMessage("Auto succesvol toegevoegd!");
+      setMessage(t('cars.addSuccess'));
+      
       // Reset form
       setBrand("");
       setModel("");
@@ -99,16 +100,14 @@ export default function AddCarPage() {
       setPricePerDay(0);          
       setAvailable(true);         
       
-      // Redirect naar cars overzicht na 2 seconden
       setTimeout(() => {
         router.push("/cars");
       }, 2000);
     } catch (err: any) {
       if (err.response && err.response.data) {
-        setErrors(err.response.data); // Backend-validatie errors
+        setErrors(err.response.data);
       } else {
-        setErrors({ general: err.message || "Onbekende fout bij toevoegen van auto" });
-        // Als de fout over authenticatie gaat, redirect naar login
+        setErrors({ general: err.message || t('cars.addError') });
         if (err.message.includes("ingelogd") || err.message.includes("token")) {
           router.push("/login");
         }
@@ -116,16 +115,14 @@ export default function AddCarPage() {
     }
   };
 
-  // Toon loading tijdens authenticatie check
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div>Laden...</div>
+        <div>{t('common.loading')}</div>
       </div>
     );
   }
 
-  // Als niet geauthenticeerd, toon niets (redirect is al gebeurd)
   if (!isAuthenticated) {
     return null;
   }
@@ -137,14 +134,14 @@ export default function AddCarPage() {
           onSubmit={handleSubmit}
           className="bg-white p-8 rounded shadow-md w-full max-w-md"
         >
-          <h2 className="text-2xl font-bold mb-6 text-center">Voeg een auto toe</h2>
+          <h2 className="text-2xl font-bold mb-6 text-center">{t('cars.addCar')}</h2>
 
           {message && <p className="text-green-600 mb-4">{message}</p>}
           {errors.general && <p className="text-red-500 mb-4">{errors.general}</p>}
 
           <input
             type="text"
-            placeholder="Merk"
+            placeholder={t('cars.brand')}
             value={brand}
             onChange={(e) => setBrand(e.target.value)}
             className="w-full mb-1 p-2 border rounded"
@@ -154,7 +151,7 @@ export default function AddCarPage() {
 
           <input
             type="text"
-            placeholder="Model"
+            placeholder={t('cars.model')}
             value={model}
             onChange={(e) => setModel(e.target.value)}
             className="w-full mb-1 p-2 border rounded"
@@ -164,7 +161,7 @@ export default function AddCarPage() {
 
           <input
             type="text"
-            placeholder="Kenteken (bijv. 1-ABC-123)"
+            placeholder={t('cars.licensePlatePlaceholder')}
             value={licensePlate}
             onChange={(e) => setLicensePlate(e.target.value.toUpperCase())}
             className="w-full mb-1 p-2 border rounded"
@@ -174,7 +171,7 @@ export default function AddCarPage() {
             <p className="text-red-500 text-sm mb-2">{errors.licensePlate}</p>
           )}
 
-          <label className="block mb-1">Type auto</label>
+          <label className="block mb-1">{t('cars.type')}</label>
           <select
             value={type}
             onChange={(e) => setType(e.target.value as CarType)}
@@ -188,7 +185,7 @@ export default function AddCarPage() {
           </select>
           {errors.type && <p className="text-red-500 text-sm mb-2">{errors.type}</p>}
 
-          <label className="block mb-1">Aantal zitplaatsen</label>
+          <label className="block mb-1">{t('cars.numberOfSeats')}</label>
           <select
             value={numberOfSeats}
             onChange={(e) => setNumberOfSeats(parseInt(e.target.value))}
@@ -204,7 +201,7 @@ export default function AddCarPage() {
             <p className="text-red-500 text-sm mb-2">{errors.numberOfSeats}</p>
           )}
 
-          <label className="block mb-1">Aantal kinderzitjes</label>
+          <label className="block mb-1">{t('cars.numberOfChildSeats')}</label>
           <select
             value={numberOfChildSeats}
             onChange={(e) => setNumberOfChildSeats(parseInt(e.target.value))}
@@ -217,10 +214,10 @@ export default function AddCarPage() {
             ))}
           </select>
 
-          <label className="block mb-1">Prijs per dag (€)</label>
+          <label className="block mb-1">{t('cars.pricePerDay')} (€)</label>
           <input
             type="number"
-            placeholder="Prijs per dag"
+            placeholder={t('cars.pricePerDay')}
             value={pricePerDay}
             onChange={(e) => setPricePerDay(parseFloat(e.target.value) || 0)}
             className="w-full mb-4 p-2 border rounded"
@@ -238,7 +235,7 @@ export default function AddCarPage() {
                 onChange={(e) => setFoldingRearSeat(e.target.checked)}
                 className="mr-2"
               />
-              Inklapbare achterbank
+              {t('cars.foldingRearSeat')}
             </label>
           </div>
 
@@ -250,7 +247,7 @@ export default function AddCarPage() {
                 onChange={(e) => setTowbar(e.target.checked)}
                 className="mr-2"
               />
-              Trekhaak
+              {t('cars.towbar')}
             </label>
           </div>
 
@@ -262,7 +259,7 @@ export default function AddCarPage() {
                 onChange={(e) => setAvailable(e.target.checked)}
                 className="mr-2"
               />
-              Beschikbaar voor verhuur
+              {t('cars.availableForRent')}
             </label>
           </div>
 
@@ -270,7 +267,7 @@ export default function AddCarPage() {
             type="submit"
             className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
           >
-            Auto toevoegen
+            {t('cars.addCar')}
           </button>
         </form>
       </main>
