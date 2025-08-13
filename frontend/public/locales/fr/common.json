@@ -187,5 +187,23 @@
       "deleteError": "Impossible de supprimer l'utilisateur",
       "toggleError": "Impossible de mettre à jour le statut de l'utilisateur"
     }
+  },
+   "register": {
+    "title": "Rejoignez Car4Rent", 
+    "subtitle": "Créez votre compte pour commencer",
+    "usernameRequired": "Le nom d'utilisateur est requis",
+    "emailRequired": "L'email est requis",
+    "passwordMinLength": "Le mot de passe doit contenir au moins 6 caractères",
+    "passwordMismatch": "Les mots de passe ne correspondent pas",
+    "registrationFailed": "Échec de l'inscription",
+    "usernamePlaceholder": "Entrez votre nom d'utilisateur",
+    "emailPlaceholder": "votre@email.com",
+    "passwordPlaceholder": "Au moins 6 caractères",
+    "confirmPasswordPlaceholder": "Répétez votre mot de passe",
+    "renterHelp": "En tant que locataire, vous pouvez rechercher et louer des voitures auprès des propriétaires.",
+    "ownerHelp": "En tant que propriétaire, vous pouvez ajouter et louer vos propres voitures aux locataires.",
+    "registering": "Création du compte...",
+    "alreadyHaveAccount": "Vous avez déjà un compte ?",
+    "loginHere": "Connectez-vous ici"
   }
 }

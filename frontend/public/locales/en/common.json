@@ -187,5 +187,23 @@
       "deleteError": "Could not delete user",
       "toggleError": "Could not update user status"
     }
+  },
+  "register": {
+    "title": "Join Car4Rent",
+    "subtitle": "Create your account to get started",
+    "usernameRequired": "Username is required",
+    "emailRequired": "Email is required", 
+    "passwordMinLength": "Password must be at least 6 characters",
+    "passwordMismatch": "Passwords do not match",
+    "registrationFailed": "Registration failed",
+    "usernamePlaceholder": "Enter your username",
+    "emailPlaceholder": "your@email.com",
+    "passwordPlaceholder": "At least 6 characters",
+    "confirmPasswordPlaceholder": "Repeat your password",
+    "renterHelp": "As a renter you can search and rent cars from owners.",
+    "ownerHelp": "As an owner you can add and rent out your own cars to renters.",
+    "registering": "Creating account...",
+    "alreadyHaveAccount": "Already have an account?",
+    "loginHere": "Login here"
   }
 }

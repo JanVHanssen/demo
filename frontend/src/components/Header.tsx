@@ -110,7 +110,6 @@ const Header: React.FC = () => {
       }
     } else {
       baseItems.push(
-        { href: "/Cars", label: t('navigation.cars'), show: true },
         { href: "/Login", label: t('navigation.login'), show: true },
         { href: "/Register", label: t('navigation.register'), show: true }
       );
@@ -166,8 +165,8 @@ const Header: React.FC = () => {
 
           {/* Right side */}
           <div className="flex items-center space-x-4">
-            {/* Language Switcher - More prominent */}
-            <div className="flex items-center">
+            {/* Language Switcher - More prominent with visible styling */}
+            <div className="flex items-center bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-2 transition-colors duration-200 border border-gray-200">
               <LanguageSwitcher />
             </div>
 

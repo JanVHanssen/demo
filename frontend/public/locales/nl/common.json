@@ -187,5 +187,23 @@
       "deleteError": "Kon gebruiker niet verwijderen",
       "toggleError": "Kon gebruikersstatus niet bijwerken"
     }
+  },
+  "register": {
+    "title": "Word lid van Car4Rent",
+    "subtitle": "Maak je account aan om te beginnen",
+    "usernameRequired": "Gebruikersnaam is verplicht",
+    "emailRequired": "E-mail is verplicht",
+    "passwordMinLength": "Wachtwoord moet minimaal 6 karakters lang zijn",
+    "passwordMismatch": "Wachtwoorden komen niet overeen", 
+    "registrationFailed": "Registratie mislukt",
+    "usernamePlaceholder": "Voer je gebruikersnaam in",
+    "emailPlaceholder": "je@email.com",
+    "passwordPlaceholder": "Minimaal 6 karakters",
+    "confirmPasswordPlaceholder": "Herhaal je wachtwoord",
+    "renterHelp": "Als huurder kun je auto's zoeken en huren van verhuurders.",
+    "ownerHelp": "Als verhuurder kun je je eigen auto's toevoegen en verhuren aan huurders.",
+    "registering": "Account aanmaken...",
+    "alreadyHaveAccount": "Heb je al een account?",
+    "loginHere": "Log hier in"
   }
 }
