@@ -1,13 +1,17 @@
 package be.ucll.se.demo.unit.controller;
 
-import be.ucll.se.demo.controller.RentalController;
-import be.ucll.se.demo.dto.RentalCreateDTO;
 import be.ucll.se.demo.dto.RentalDTO;
+import be.ucll.se.demo.dto.RentalCreateDTO;
+import be.ucll.se.demo.controller.RentalController;
+import be.ucll.se.demo.dto.CarDTO;
+import be.ucll.se.demo.dto.PickupPointDTO;
+import be.ucll.se.demo.dto.ContactDTO;
 import be.ucll.se.demo.service.RentalService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -15,19 +19,17 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.hamcrest.Matchers.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@ExtendWith(MockitoExtension.class)
 @WebMvcTest(RentalController.class)
 class RentalControllerTest {
 
@@ -37,112 +39,140 @@ class RentalControllerTest {
     @MockBean
     private RentalService rentalService;
 
+    @Autowired
     private ObjectMapper objectMapper;
+
     private RentalDTO testRentalDTO;
     private RentalCreateDTO testRentalCreateDTO;
+    private List<RentalDTO> testRentalList;
 
     @BeforeEach
     void setUp() {
-        objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-
-        // Setup test RentalDTO
-        testRentalDTO = new RentalDTO();
-        testRentalDTO.setId(1L);
-        testRentalDTO.setOwnerEmail("owner@example.com");
-
-        // Setup INVALID RentalCreateDTO for most tests (to simulate validation
-        // failures)
-        testRentalCreateDTO = new RentalCreateDTO();
-        testRentalCreateDTO.setCarId(1L);
-        testRentalCreateDTO.setStartDate("2025-01-15"); // This might fail @ValidDate
-        testRentalCreateDTO.setStartTime("10:00");
-        testRentalCreateDTO.setEndDate("2025-01-20");
-        testRentalCreateDTO.setEndTime("10:00");
-        testRentalCreateDTO.setStreet("Main Street");
-        testRentalCreateDTO.setNumber("123");
-        testRentalCreateDTO.setPostal("1000");
-        testRentalCreateDTO.setCity("Brussels");
-        testRentalCreateDTO.setContactName("John Doe");
-        testRentalCreateDTO.setPhone("0123456789");
-        testRentalCreateDTO.setEmail("renter@example.com");
-        testRentalCreateDTO.setOwnerEmail("owner@example.com");
+        // Setup test DTOs
+        testRentalDTO = createTestRentalDTO();
+        testRentalCreateDTO = createTestRentalCreateDTO();
+        testRentalList = Arrays.asList(testRentalDTO, createAnotherTestRentalDTO());
     }
 
-    // Helper method to create VALID DTO that passes all validation
-    private RentalCreateDTO createValidRentalCreateDTO() {
-        RentalCreateDTO validDTO = new RentalCreateDTO();
-        validDTO.setCarId(1L);
-        // Try different date formats to see what @ValidDate accepts
-        validDTO.setStartDate("2025-01-15"); // ISO format
-        validDTO.setStartTime("10:00");
-        validDTO.setEndDate("2025-01-20");
-        validDTO.setEndTime("10:00");
-        validDTO.setStreet("Main Street");
-        validDTO.setNumber("123");
-        validDTO.setPostal("1000");
-        validDTO.setCity("Brussels");
-        validDTO.setContactName("John Doe");
-        validDTO.setPhone("0123456789");
-        validDTO.setEmail("renter@example.com");
-        validDTO.setOwnerEmail("owner@example.com");
-        return validDTO;
+    private RentalDTO createTestRentalDTO() {
+        RentalDTO rental = new RentalDTO();
+        rental.setId(1L);
+        rental.setStartDate(LocalDate.of(2024, 12, 1));
+        rental.setStartTime(LocalTime.of(10, 0));
+        rental.setEndDate(LocalDate.of(2024, 12, 5));
+        rental.setEndTime(LocalTime.of(18, 0));
+        rental.setOwnerEmail("owner@example.com");
+
+        // Car DTO
+        CarDTO car = new CarDTO();
+        car.setId(1L);
+        car.setBrand("Toyota");
+        car.setModel("Camry");
+        rental.setCar(car);
+
+        // PickupPoint DTO
+        PickupPointDTO pickupPoint = new PickupPointDTO();
+        pickupPoint.setStreet("Main Street");
+        pickupPoint.setNumber("123");
+        pickupPoint.setPostal("3500");
+        pickupPoint.setCity("Hasselt");
+        rental.setPickupPoint(pickupPoint);
+
+        // Contact DTO
+        ContactDTO contact = new ContactDTO();
+        contact.setName("John Doe");
+        contact.setPhone("+32123456789");
+        contact.setEmail("john@example.com");
+        rental.setContact(contact);
+
+        return rental;
     }
 
-    // Try alternative valid DTO with different date format
-    private RentalCreateDTO createAlternativeValidDTO() {
-        RentalCreateDTO validDTO = new RentalCreateDTO();
-        validDTO.setCarId(1L);
-        validDTO.setStartDate("01/15/2025"); // US format
-        validDTO.setStartTime("10:00");
-        validDTO.setEndDate("01/20/2025");
-        validDTO.setEndTime("10:00");
-        validDTO.setStreet("Main Street");
-        validDTO.setNumber("123");
-        validDTO.setPostal("1000");
-        validDTO.setCity("Brussels");
-        validDTO.setContactName("John Doe");
-        validDTO.setPhone("0123456789");
-        validDTO.setEmail("renter@example.com");
-        validDTO.setOwnerEmail("owner@example.com");
-        return validDTO;
+    private RentalDTO createAnotherTestRentalDTO() {
+        RentalDTO rental = new RentalDTO();
+        rental.setId(2L);
+        rental.setStartDate(LocalDate.of(2024, 12, 10));
+        rental.setStartTime(LocalTime.of(9, 0));
+        rental.setEndDate(LocalDate.of(2024, 12, 15));
+        rental.setEndTime(LocalTime.of(17, 0));
+        rental.setOwnerEmail("owner2@example.com");
+
+        // Car DTO
+        CarDTO car = new CarDTO();
+        car.setId(2L);
+        car.setBrand("Honda");
+        car.setModel("Civic");
+        rental.setCar(car);
+
+        // PickupPoint DTO
+        PickupPointDTO pickupPoint = new PickupPointDTO();
+        pickupPoint.setStreet("Oak Avenue");
+        pickupPoint.setNumber("456");
+        pickupPoint.setPostal("2000");
+        pickupPoint.setCity("Antwerpen");
+        rental.setPickupPoint(pickupPoint);
+
+        // Contact DTO
+        ContactDTO contact = new ContactDTO();
+        contact.setName("Jane Smith");
+        contact.setPhone("+32987654321");
+        contact.setEmail("jane@example.com");
+        rental.setContact(contact);
+
+        return rental;
     }
 
-    // ===== GET ALL RENTALS TESTS =====
+    private RentalCreateDTO createTestRentalCreateDTO() {
+        RentalCreateDTO createDTO = new RentalCreateDTO();
+        createDTO.setCarId(1L);
+        createDTO.setStartDate("01/12/2024"); // dd/mm/yyyy format
+        createDTO.setStartTime("10:00");
+        createDTO.setEndDate("05/12/2024"); // dd/mm/yyyy format
+        createDTO.setEndTime("18:00");
+        createDTO.setStreet("Main Street");
+        createDTO.setNumber("123");
+        createDTO.setPostal("3500");
+        createDTO.setCity("Hasselt");
+        createDTO.setContactName("John Doe");
+        createDTO.setPhone("+32123456789");
+        createDTO.setEmail("john@example.com");
+        createDTO.setOwnerEmail("owner@example.com");
+        return createDTO;
+    }
+
     @Test
-    void getAllRentals_ShouldReturnAllRentals() throws Exception {
+    void getAllRentals_ShouldReturnListOfRentals() throws Exception {
         // Given
-        List<RentalDTO> rentals = Arrays.asList(testRentalDTO);
-        when(rentalService.getAllRentalsDTO()).thenReturn(rentals);
+        when(rentalService.getAllRentalsDTO()).thenReturn(testRentalList);
 
         // When & Then
         mockMvc.perform(get("/rentals"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].id", is(1)))
-                .andExpect(jsonPath("$[0].ownerEmail", is("owner@example.com")));
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].car.brand").value("Toyota"))
+                .andExpect(jsonPath("$[0].ownerEmail").value("owner@example.com"))
+                .andExpect(jsonPath("$[1].id").value(2))
+                .andExpect(jsonPath("$[1].car.brand").value("Honda"));
 
-        verify(rentalService).getAllRentalsDTO();
+        verify(rentalService, times(1)).getAllRentalsDTO();
     }
 
     @Test
-    void getAllRentals_ShouldReturnEmptyList_WhenNoRentals() throws Exception {
+    void getAllRentals_WhenEmpty_ShouldReturnEmptyList() throws Exception {
         // Given
-        when(rentalService.getAllRentalsDTO()).thenReturn(Collections.emptyList());
+        when(rentalService.getAllRentalsDTO()).thenReturn(Arrays.asList());
 
         // When & Then
         mockMvc.perform(get("/rentals"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(0)));
-
-        verify(rentalService).getAllRentalsDTO();
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
-    // ===== GET RENTAL BY ID TESTS =====
     @Test
-    void getRentalById_ShouldReturnRental_WhenRentalExists() throws Exception {
+    void getRentalById_WhenExists_ShouldReturnRental() throws Exception {
         // Given
         when(rentalService.getRentalByIdDTO(1L)).thenReturn(Optional.of(testRentalDTO));
 
@@ -150,14 +180,16 @@ class RentalControllerTest {
         mockMvc.perform(get("/rentals/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id", is(1)))
-                .andExpect(jsonPath("$.ownerEmail", is("owner@example.com")));
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.car.brand").value("Toyota"))
+                .andExpect(jsonPath("$.ownerEmail").value("owner@example.com"))
+                .andExpect(jsonPath("$.pickupPoint.city").value("Hasselt"));
 
-        verify(rentalService).getRentalByIdDTO(1L);
+        verify(rentalService, times(1)).getRentalByIdDTO(1L);
     }
 
     @Test
-    void getRentalById_ShouldReturnNotFound_WhenRentalDoesNotExist() throws Exception {
+    void getRentalById_WhenNotExists_ShouldReturn404() throws Exception {
         // Given
         when(rentalService.getRentalByIdDTO(999L)).thenReturn(Optional.empty());
 
@@ -165,143 +197,114 @@ class RentalControllerTest {
         mockMvc.perform(get("/rentals/999"))
                 .andExpect(status().isNotFound());
 
-        verify(rentalService).getRentalByIdDTO(999L);
+        verify(rentalService, times(1)).getRentalByIdDTO(999L);
     }
 
-    // ===== CREATE RENTAL TESTS =====
     @Test
-    void createRental_WhenValidData_ShouldCreateAndReturn201() throws Exception {
+    void createRental_WithValidData_ShouldReturn201() throws Exception {
         // Given
         when(rentalService.createRental(any(RentalCreateDTO.class))).thenReturn(testRentalDTO);
-
-        String jsonContent = objectMapper.writeValueAsString(testRentalCreateDTO);
-
-        // When & Then - Validation fails, so expecting 400 instead of 201
-        mockMvc.perform(post("/rentals")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonContent))
-                .andExpect(status().isBadRequest()); // Changed from 201 to 400
-
-        // Service is not called due to validation failure
-        verify(rentalService, never()).createRental(any(RentalCreateDTO.class));
-    }
-
-    @Test
-    void createRental_WhenServiceThrowsIllegalArgumentException_ShouldReturn400() throws Exception {
-        // Given - Create a DTO that passes validation
-        RentalCreateDTO validDTO = new RentalCreateDTO();
-        validDTO.setCarId(1L);
-        validDTO.setStartDate("2025-01-15");
-        validDTO.setStartTime("10:00");
-        validDTO.setEndDate("2025-01-20");
-        validDTO.setEndTime("10:00");
-        validDTO.setStreet("Main Street");
-        validDTO.setNumber("123");
-        validDTO.setPostal("1000");
-        validDTO.setCity("Brussels");
-        validDTO.setContactName("John Doe");
-        validDTO.setPhone("0123456789");
-        validDTO.setEmail("valid@example.com");
-        validDTO.setOwnerEmail("owner@example.com");
-
-        when(rentalService.createRental(any(RentalCreateDTO.class)))
-                .thenThrow(new IllegalArgumentException("Invalid rental data"));
-
-        String jsonContent = objectMapper.writeValueAsString(validDTO);
 
         // When & Then
         mockMvc.perform(post("/rentals")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonContent))
-                .andExpect(status().isBadRequest());
+                .content(objectMapper.writeValueAsString(testRentalCreateDTO)))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.car.brand").value("Toyota"))
+                .andExpect(jsonPath("$.ownerEmail").value("owner@example.com"));
 
-        verify(rentalService).createRental(any(RentalCreateDTO.class));
+        verify(rentalService, times(1)).createRental(any(RentalCreateDTO.class));
     }
 
     @Test
-    void createRental_WhenInvalidJSON_ShouldReturn400() throws Exception {
-        // When & Then - Invalid JSON returns 500, not 400
+    void createRental_WithInvalidCarId_ShouldReturn400() throws Exception {
+        // Given - Use valid DTO but mock service to throw exception
+        RentalCreateDTO validDTO = createTestRentalCreateDTO();
+        when(rentalService.createRental(any(RentalCreateDTO.class)))
+                .thenThrow(new IllegalArgumentException("Car not found with id: 999"));
+
+        // When & Then
         mockMvc.perform(post("/rentals")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{invalid json}"))
-                .andExpect(status().isInternalServerError()); // Changed from 400 to 500
+                .content(objectMapper.writeValueAsString(validDTO)))
+                .andExpect(status().isBadRequest());
+
+        verify(rentalService, times(1)).createRental(any(RentalCreateDTO.class));
+    }
+
+    @Test
+    void createRental_WithInvalidData_ShouldReturn400() throws Exception {
+        // Given - invalid DTO with missing required fields
+        RentalCreateDTO invalidDTO = new RentalCreateDTO();
+        invalidDTO.setCarId(null); // Required field missing
+        invalidDTO.setStartDate("invalid-date"); // Invalid date format
+
+        // When & Then
+        mockMvc.perform(post("/rentals")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(invalidDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.carId").exists())
+                .andExpect(jsonPath("$.startDate").exists());
 
         verify(rentalService, never()).createRental(any(RentalCreateDTO.class));
     }
 
     @Test
-    void createRental_WhenValidationFails_ShouldReturn400() throws Exception {
-        // Given - Missing required field
-        testRentalCreateDTO.setEmail(null);
-        String jsonContent = objectMapper.writeValueAsString(testRentalCreateDTO);
-
-        // When & Then - @Valid should trigger validation
-        mockMvc.perform(post("/rentals")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonContent))
-                .andExpect(status().isBadRequest());
-
-        verify(rentalService, never()).createRental(any(RentalCreateDTO.class));
-    }
-
-    // ===== UPDATE RENTAL TESTS =====
-    @Test
-    void updateRental_WhenRentalExists_ShouldUpdateAndReturn200() throws Exception {
+    void updateRental_WhenExists_ShouldReturnUpdated() throws Exception {
         // Given
-        when(rentalService.updateRental(eq(1L), any(RentalCreateDTO.class))).thenReturn(Optional.of(testRentalDTO));
+        RentalDTO updatedRental = createTestRentalDTO();
+        updatedRental.setOwnerEmail("updated@example.com");
+        when(rentalService.updateRental(eq(1L), any(RentalCreateDTO.class)))
+                .thenReturn(Optional.of(updatedRental));
 
-        String jsonContent = objectMapper.writeValueAsString(testRentalCreateDTO);
-
-        // When & Then - Validation fails, expecting 400
+        // When & Then
         mockMvc.perform(put("/rentals/1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonContent))
-                .andExpect(status().isBadRequest()); // Changed from 200 to 400
+                .content(objectMapper.writeValueAsString(testRentalCreateDTO)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.ownerEmail").value("updated@example.com"));
 
-        // Service not called due to validation failure
-        verify(rentalService, never()).updateRental(eq(1L), any(RentalCreateDTO.class));
+        verify(rentalService, times(1)).updateRental(eq(1L), any(RentalCreateDTO.class));
     }
 
     @Test
-    void updateRental_WhenRentalDoesNotExist_ShouldReturn404() throws Exception {
-        // Given - Use VALID DTO that passes validation
-        RentalCreateDTO validDTO = createValidRentalCreateDTO();
-
-        when(rentalService.updateRental(eq(999L), any(RentalCreateDTO.class))).thenReturn(Optional.empty());
-
-        String jsonContent = objectMapper.writeValueAsString(validDTO);
+    void updateRental_WhenNotExists_ShouldReturn404() throws Exception {
+        // Given
+        when(rentalService.updateRental(eq(999L), any(RentalCreateDTO.class)))
+                .thenReturn(Optional.empty());
 
         // When & Then
         mockMvc.perform(put("/rentals/999")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonContent))
+                .content(objectMapper.writeValueAsString(testRentalCreateDTO)))
                 .andExpect(status().isNotFound());
 
-        verify(rentalService).updateRental(eq(999L), any(RentalCreateDTO.class));
+        verify(rentalService, times(1)).updateRental(eq(999L), any(RentalCreateDTO.class));
     }
 
     @Test
-    void updateRental_WhenServiceThrowsIllegalArgumentException_ShouldReturn400() throws Exception {
-        // Given - Use VALID DTO that passes validation
-        RentalCreateDTO validDTO = createValidRentalCreateDTO();
-
+    void updateRental_WithInvalidCarId_ShouldReturn400() throws Exception {
+        // Given - Use valid DTO but mock service to throw exception
+        RentalCreateDTO validDTO = createTestRentalCreateDTO();
         when(rentalService.updateRental(eq(1L), any(RentalCreateDTO.class)))
-                .thenThrow(new IllegalArgumentException("Invalid update data"));
-
-        String jsonContent = objectMapper.writeValueAsString(validDTO);
+                .thenThrow(new IllegalArgumentException("Car not found with id: 999"));
 
         // When & Then
         mockMvc.perform(put("/rentals/1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonContent))
+                .content(objectMapper.writeValueAsString(validDTO)))
                 .andExpect(status().isBadRequest());
 
-        verify(rentalService).updateRental(eq(1L), any(RentalCreateDTO.class));
+        verify(rentalService, times(1)).updateRental(eq(1L), any(RentalCreateDTO.class));
     }
 
-    // ===== DELETE RENTAL TESTS =====
     @Test
-    void deleteRental_ShouldReturnNoContent_WhenRentalExists() throws Exception {
+    void deleteRental_WhenExists_ShouldReturn204() throws Exception {
         // Given
         when(rentalService.deleteRental(1L)).thenReturn(true);
 
@@ -309,11 +312,11 @@ class RentalControllerTest {
         mockMvc.perform(delete("/rentals/1"))
                 .andExpect(status().isNoContent());
 
-        verify(rentalService).deleteRental(1L);
+        verify(rentalService, times(1)).deleteRental(1L);
     }
 
     @Test
-    void deleteRental_ShouldReturnNotFound_WhenRentalDoesNotExist() throws Exception {
+    void deleteRental_WhenNotExists_ShouldReturn404() throws Exception {
         // Given
         when(rentalService.deleteRental(999L)).thenReturn(false);
 
@@ -321,134 +324,148 @@ class RentalControllerTest {
         mockMvc.perform(delete("/rentals/999"))
                 .andExpect(status().isNotFound());
 
-        verify(rentalService).deleteRental(999L);
+        verify(rentalService, times(1)).deleteRental(999L);
     }
 
-    // ===== GET RENTALS BY CAR ID TESTS =====
     @Test
     void getRentalsByCarId_ShouldReturnRentals() throws Exception {
         // Given
-        List<RentalDTO> rentals = Arrays.asList(testRentalDTO);
-        when(rentalService.getRentalsByCarIdDTO(1L)).thenReturn(rentals);
+        when(rentalService.getRentalsByCarIdDTO(1L)).thenReturn(Arrays.asList(testRentalDTO));
 
         // When & Then
         mockMvc.perform(get("/rentals/car/1"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].id", is(1)));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].car.id").value(1));
 
-        verify(rentalService).getRentalsByCarIdDTO(1L);
+        verify(rentalService, times(1)).getRentalsByCarIdDTO(1L);
     }
 
-    // ===== GET RENTALS BY OWNER EMAIL TESTS =====
     @Test
     void getRentalsByOwnerEmail_ShouldReturnRentals() throws Exception {
         // Given
-        List<RentalDTO> rentals = Arrays.asList(testRentalDTO);
-        when(rentalService.getRentalsByOwnerEmailDTO("owner@example.com")).thenReturn(rentals);
+        String ownerEmail = "owner@example.com";
+        when(rentalService.getRentalsByOwnerEmailDTO(ownerEmail)).thenReturn(Arrays.asList(testRentalDTO));
 
         // When & Then
-        mockMvc.perform(get("/rentals/owner/owner@example.com"))
+        mockMvc.perform(get("/rentals/owner/" + ownerEmail))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].ownerEmail", is("owner@example.com")));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].ownerEmail").value(ownerEmail));
 
-        verify(rentalService).getRentalsByOwnerEmailDTO("owner@example.com");
+        verify(rentalService, times(1)).getRentalsByOwnerEmailDTO(ownerEmail);
     }
 
-    // ===== GET RENTALS BY START DATE TESTS =====
     @Test
     void getRentalsByStartDate_ShouldReturnRentals() throws Exception {
         // Given
-        List<RentalDTO> rentals = Arrays.asList(testRentalDTO);
-        when(rentalService.getRentalsByStartDateDTO(LocalDate.of(2025, 1, 15))).thenReturn(rentals);
+        String dateString = "2024-12-01";
+        LocalDate date = LocalDate.parse(dateString);
+        when(rentalService.getRentalsByStartDateDTO(date)).thenReturn(Arrays.asList(testRentalDTO));
 
         // When & Then
-        mockMvc.perform(get("/rentals/date/2025-01-15"))
+        mockMvc.perform(get("/rentals/date/" + dateString))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(1)));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].startDate").value(dateString));
 
-        verify(rentalService).getRentalsByStartDateDTO(LocalDate.of(2025, 1, 15));
+        verify(rentalService, times(1)).getRentalsByStartDateDTO(date);
     }
 
     @Test
-    void getRentalsByStartDate_WhenSlashesInDate_ShouldReturn500() throws Exception {
-        // When & Then - Invalid date format in path causes 500
-        mockMvc.perform(get("/rentals/date/2025/01/15"))
+    void getRentalsByStartDate_WithInvalidDate_ShouldReturn500() throws Exception {
+        // Note: Invalid date parsing throws DateTimeParseException which results in 500
+        // This is handled by GlobalExceptionHandler
+        mockMvc.perform(get("/rentals/date/invalid-date"))
                 .andExpect(status().isInternalServerError());
 
         verify(rentalService, never()).getRentalsByStartDateDTO(any(LocalDate.class));
     }
 
-    // ===== GET RENTALS BY CITY TESTS =====
     @Test
     void getRentalsByCity_ShouldReturnRentals() throws Exception {
         // Given
-        List<RentalDTO> rentals = Arrays.asList(testRentalDTO);
-        when(rentalService.getRentalsByCityDTO("Brussels")).thenReturn(rentals);
+        String city = "Hasselt";
+        when(rentalService.getRentalsByCityDTO(city)).thenReturn(Arrays.asList(testRentalDTO));
 
         // When & Then
-        mockMvc.perform(get("/rentals/city/Brussels"))
+        mockMvc.perform(get("/rentals/city/" + city))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(1)));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].pickupPoint.city").value(city));
 
-        verify(rentalService).getRentalsByCityDTO("Brussels");
+        verify(rentalService, times(1)).getRentalsByCityDTO(city);
     }
 
-    // ===== ERROR HANDLING TESTS =====
     @Test
-    void createRental_WhenWrongContentType_ShouldReturn500() throws Exception {
-        // When & Then - Wrong content type returns 500, not 415
+    void getRentalsByCity_WhenNoRentalsFound_ShouldReturnEmptyList() throws Exception {
+        // Given
+        String city = "UnknownCity";
+        when(rentalService.getRentalsByCityDTO(city)).thenReturn(Arrays.asList());
+
+        // When & Then
+        mockMvc.perform(get("/rentals/city/" + city))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.length()").value(0));
+
+        verify(rentalService, times(1)).getRentalsByCityDTO(city);
+    }
+
+    @Test
+    void createRental_WithInvalidEmail_ShouldReturn400() throws Exception {
+        // Given - invalid email format
+        RentalCreateDTO invalidDTO = createTestRentalCreateDTO();
+        invalidDTO.setEmail("invalid-email");
+
+        // When & Then
         mockMvc.perform(post("/rentals")
-                .contentType(MediaType.TEXT_PLAIN)
-                .content("some text"))
-                .andExpect(status().isInternalServerError()); // Changed from 415 to 500
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(invalidDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.email").exists());
 
         verify(rentalService, never()).createRental(any(RentalCreateDTO.class));
     }
 
     @Test
-    void getRentalById_WhenInvalidIdFormat_ShouldReturn500() throws Exception {
-        // When & Then - Invalid ID format returns 500, not 400
-        mockMvc.perform(get("/rentals/{id}", "invalid-id"))
-                .andExpect(status().isInternalServerError()); // Changed from 400 to 500
-
-        verify(rentalService, never()).getRentalByIdDTO(anyLong());
-    }
-
-    @Test
-    void getRentalsByCarId_WhenInvalidCarIdFormat_ShouldReturn500() throws Exception {
-        // When & Then - Invalid car ID format returns 500, not 400
-        mockMvc.perform(get("/rentals/car/{carId}", "invalid-id"))
-                .andExpect(status().isInternalServerError()); // Changed from 400 to 500
-
-        verify(rentalService, never()).getRentalsByCarIdDTO(anyLong());
-    }
-
-    // ===== VALID DATA TEST =====
-    @Test
-    void createRental_WhenAllValidationPasses_ShouldReturn201() throws Exception {
-        // Given - Use VALID DTO
-        RentalCreateDTO validDTO = createValidRentalCreateDTO();
-
-        when(rentalService.createRental(any(RentalCreateDTO.class))).thenReturn(testRentalDTO);
-
-        String jsonContent = objectMapper.writeValueAsString(validDTO);
+    void createRental_WithBlankRequiredFields_ShouldReturn400() throws Exception {
+        // Given - blank required fields
+        RentalCreateDTO invalidDTO = createTestRentalCreateDTO();
+        invalidDTO.setStreet(""); // Required field is blank
+        invalidDTO.setContactName(""); // Required field is blank
 
         // When & Then
         mockMvc.perform(post("/rentals")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonContent))
-                .andExpect(status().isCreated())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id", is(1)))
-                .andExpect(jsonPath("$.ownerEmail", is("owner@example.com")));
+                .content(objectMapper.writeValueAsString(invalidDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.street").exists())
+                .andExpect(jsonPath("$.contactName").exists());
 
-        verify(rentalService).createRental(any(RentalCreateDTO.class));
+        verify(rentalService, never()).createRental(any(RentalCreateDTO.class));
     }
 
+    @Test
+    void createRental_WithInvalidDateFormat_ShouldReturn400() throws Exception {
+        // Given - invalid date format
+        RentalCreateDTO invalidDTO = createTestRentalCreateDTO();
+        invalidDTO.setStartDate("2024-12-01"); // Should be dd/mm/yyyy
+        invalidDTO.setEndDate("2024-12-05"); // Should be dd/mm/yyyy
+
+        // When & Then
+        mockMvc.perform(post("/rentals")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(invalidDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.startDate").exists())
+                .andExpect(jsonPath("$.endDate").exists());
+
+        verify(rentalService, never()).createRental(any(RentalCreateDTO.class));
+    }
 }
