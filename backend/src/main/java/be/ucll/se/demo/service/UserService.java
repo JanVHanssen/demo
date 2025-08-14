@@ -1,9 +1,13 @@
 package be.ucll.se.demo.service;
 
-import java.util.Base64;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +20,6 @@ import be.ucll.se.demo.model.RoleName;
 import be.ucll.se.demo.model.User;
 import be.ucll.se.demo.repository.RoleRepository;
 import be.ucll.se.demo.repository.UserRepository;
-import java.security.MessageDigest;
 
 @Service
 @Transactional
@@ -51,9 +54,16 @@ public class UserService {
 
         String hashedPassword = hashPassword(password);
         User user = new User();
+        user.setUserId(UUID.randomUUID().toString()); // Ensure userId is set
         user.setUsername(username);
         user.setEmail(email);
         user.setPassword(hashedPassword);
+        user.setEnabled(true); // Set enabled by default
+
+        // Initialize roles set if null
+        if (user.getRoles() == null) {
+            user.setRoles(new HashSet<>());
+        }
 
         // Assign role
         Role role = roleRepository.findByName(roleName)
@@ -151,18 +161,31 @@ public class UserService {
                 .orElse(Set.of());
     }
 
+    // FIXED: Hash password using SHA-256 with hexadecimal output
     private String hashPassword(String password) {
         try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(password.getBytes());
-            return Base64.getEncoder().encodeToString(hash);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to hash password", e);
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+
+            // Convert byte array to hexadecimal string
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not found", e);
         }
     }
 
-    private boolean verifyPassword(String raw, String hashed) {
-        return hashPassword(raw).equals(hashed);
+    // FIXED: Verify password against SHA-256 hash
+    private boolean verifyPassword(String plainPassword, String hashedPassword) {
+        String inputHash = hashPassword(plainPassword);
+        return inputHash.equals(hashedPassword);
     }
 
     // NEW: Convert User to DTO

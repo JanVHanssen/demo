@@ -10,8 +10,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.Base64;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,14 +32,24 @@ public class AuthController {
         this.jwtUtil = jwtUtil;
     }
 
-    // Helper method for password hashing
+    // FIXED: Helper method for SHA-256 password hashing (hexadecimal output)
     private String hashPassword(String password) {
         try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(password.getBytes());
-            return Base64.getEncoder().encodeToString(hash);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to hash password", e);
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+
+            // Convert byte array to hexadecimal string
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not found", e);
         }
     }
 
@@ -104,50 +115,45 @@ public class AuthController {
         }
     }
 
-    // UPDATED: Enhanced login with proper password verification
+    // FIXED: Updated login to use loginWithRoles and proper response format
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
-        String username = body.get("username");
-        String password = body.get("password");
+    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> loginRequest) {
+        String username = loginRequest.get("username");
+        String password = loginRequest.get("password");
 
         System.out.println("=== LOGIN DEBUG ===");
         System.out.println("Login attempt for user: " + username);
         System.out.println("Password received: " + password);
 
-        // Hash the input password to compare with stored hash
-        String hashedInputPassword = hashPassword(password);
-        System.out.println("Hashed input password: " + hashedInputPassword);
+        try {
+            // Use loginWithRoles as expected by tests
+            LoginResponseDTO loginResponse = userService.loginWithRoles(username, password);
 
-        // Get user from database
-        User user = userService.findByEmailOrUsername(username);
-        if (user != null) {
-            System.out.println("User found: " + user.getEmail());
-            System.out.println("User enabled: " + user.isEnabled());
-            System.out.println("Stored password hash: " + user.getPassword());
-            System.out.println("Passwords match: " + user.getPassword().equals(hashedInputPassword));
+            if (loginResponse != null) {
+                System.out.println("✓ Login successful for user: " + username);
+                String token = jwtUtil.generateToken(loginResponse.getEmail());
 
-            // Check if user is enabled and password matches
-            if (user.isEnabled() && user.getPassword().equals(hashedInputPassword)) {
-                // Create login response
-                LoginResponseDTO loginResponse = new LoginResponseDTO();
-                loginResponse.setUserId(user.getUserId());
-                loginResponse.setUsername(user.getUsername());
-                loginResponse.setEmail(user.getEmail());
-                loginResponse.setRoles(userService.getUserRoles(user.getEmail()));
+                Map<String, Object> response = new HashMap<>();
+                response.put("token", token);
+                response.put("userId", loginResponse.getUserId());
+                response.put("username", loginResponse.getUsername());
+                response.put("email", loginResponse.getEmail());
+                response.put("roles", loginResponse.getRoles());
 
-                String token = jwtUtil.generateToken(user.getEmail());
-                loginResponse.setToken(token);
-
-                System.out.println("✅ Login successful for: " + user.getEmail());
-                return ResponseEntity.ok(loginResponse);
+                return ResponseEntity.ok(response);
+            } else {
+                System.out.println("✗ Login failed for user: " + username);
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Invalid credentials or account disabled");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
             }
-        } else {
-            System.out.println("❌ User not found: " + username);
+        } catch (Exception e) {
+            System.out.println("✗ Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Authentication failed");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
-
-        System.out.println("❌ Login failed for user: " + username);
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "Invalid credentials or account disabled"));
     }
 
     // UPDATED: Enhanced token validation with role information

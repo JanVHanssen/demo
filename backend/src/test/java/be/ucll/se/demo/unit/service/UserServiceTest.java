@@ -18,7 +18,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import java.util.Base64;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -51,7 +54,7 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        testHashedPassword = Base64.getEncoder().encodeToString(testPassword.getBytes());
+        testHashedPassword = hashPassword(testPassword);
 
         // Setup roles
         renterRole = new Role(RoleName.RENTER);
@@ -70,6 +73,29 @@ class UserServiceTest {
         lenient().when(roleRepository.findByName(RoleName.RENTER)).thenReturn(Optional.of(renterRole));
         lenient().when(roleRepository.findByName(RoleName.OWNER)).thenReturn(Optional.of(ownerRole));
         lenient().when(roleRepository.findByName(RoleName.ADMIN)).thenReturn(Optional.of(adminRole));
+    }
+
+    /**
+     * Helper method to hash passwords using SHA-256
+     */
+    private String hashPassword(String password) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+
+            // Convert byte array to hexadecimal string
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not found", e);
+        }
     }
 
     // ===== REGISTER TESTS (Updated for new role-based registration) =====
@@ -96,7 +122,7 @@ class UserServiceTest {
         User savedUser = userCaptor.getValue();
         assertThat(savedUser.getUsername()).isEqualTo(username);
         assertThat(savedUser.getEmail()).isEqualTo(email);
-        assertThat(savedUser.getPassword()).isEqualTo(Base64.getEncoder().encodeToString(password.getBytes()));
+        assertThat(savedUser.getPassword()).isEqualTo(hashPassword(password)); // Updated to use SHA-256
         assertThat(savedUser.getRoles()).contains(renterRole);
 
         verify(userRepository).findByUsername(username);
@@ -126,6 +152,7 @@ class UserServiceTest {
         User savedUser = userCaptor.getValue();
         assertThat(savedUser.getUsername()).isEqualTo(username);
         assertThat(savedUser.getEmail()).isEqualTo(email);
+        assertThat(savedUser.getPassword()).isEqualTo(hashPassword(password)); // Updated to use SHA-256
         assertThat(savedUser.getRoles()).contains(ownerRole);
 
         verify(roleRepository).findByName(RoleName.OWNER);
@@ -446,6 +473,67 @@ class UserServiceTest {
         assertThat(loginResult).isNotNull();
         assertThat(loginResult.getUsername()).isEqualTo(username);
         assertThat(loginResult.getEmail()).isEqualTo(email);
+        // Verify the password was properly hashed during registration
+        assertThat(savedUser.getPassword()).isEqualTo(hashPassword(password));
+    }
+
+    // ===== PASSWORD HASHING SPECIFIC TESTS =====
+    @Test
+    void register_ShouldHashPasswordWithSHA256() {
+        // Given
+        String username = "newuser";
+        String email = "newuser@example.com";
+        String plainPassword = "myPlainPassword123";
+        String expectedHashedPassword = hashPassword(plainPassword);
+
+        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+        // When
+        userService.register(username, email, plainPassword);
+
+        // Then
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+
+        User savedUser = userCaptor.getValue();
+        assertThat(savedUser.getPassword()).isEqualTo(expectedHashedPassword);
+        assertThat(savedUser.getPassword()).isNotEqualTo(plainPassword); // Ensure it's not stored as plain text
+        assertThat(savedUser.getPassword()).hasSize(64); // SHA-256 produces a 64-character hex string
+    }
+
+    @Test
+    void login_ShouldVerifyPasswordAgainstSHA256Hash() {
+        // Given
+        String username = "testuser";
+        String plainPassword = testPassword;
+        // testUser already has SHA-256 hashed password from setUp()
+
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+
+        // When
+        User result = userService.login(username, plainPassword);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(testUser);
+        // The service should have successfully verified the plain password against the
+        // stored hash
+    }
+
+    @Test
+    void login_ShouldFailWithWrongPasswordAgainstSHA256Hash() {
+        // Given
+        String username = "testuser";
+        String wrongPassword = "wrongPassword123";
+
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
+
+        // When
+        User result = userService.login(username, wrongPassword);
+
+        // Then
+        assertThat(result).isNull(); // Login should fail with wrong password
     }
 
     // ===== HELPER METHODS =====
@@ -454,7 +542,7 @@ class UserServiceTest {
         user.setUserId("test-user-id");
         user.setUsername("testuser");
         user.setEmail("test@example.com");
-        user.setPassword(testHashedPassword);
+        user.setPassword(testHashedPassword); // Now using SHA-256 hashed password
         user.setEnabled(true);
 
         // Add default RENTER role

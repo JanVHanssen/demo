@@ -15,6 +15,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -46,11 +49,11 @@ class AuthControllerTest {
     void setUp() {
         objectMapper = new ObjectMapper();
 
-        // Setup test user
+        // Setup test user with SHA-256 hashed password
         testUser = new User();
         setUserField(testUser, "username", "testuser");
         setUserField(testUser, "email", "test@example.com");
-        setUserField(testUser, "password", "hashedpassword");
+        setUserField(testUser, "password", hashPassword("hashedpassword"));
 
         // Setup test login response
         testLoginResponse = new LoginResponseDTO();
@@ -58,6 +61,29 @@ class AuthControllerTest {
         testLoginResponse.setUsername("testuser");
         testLoginResponse.setEmail("test@example.com");
         testLoginResponse.setRoles(Set.of(RoleName.RENTER));
+    }
+
+    /**
+     * Helper method to hash passwords using SHA-256
+     */
+    private String hashPassword(String password) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+
+            // Convert byte array to hexadecimal string
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not found", e);
+        }
     }
 
     // Helper method to set user fields (unchanged)
