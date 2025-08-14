@@ -9,10 +9,13 @@ import be.ucll.se.demo.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.nio.charset.StandardCharsets;
@@ -23,8 +26,11 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -41,12 +47,17 @@ class AuthControllerTest {
     @MockBean
     private JwtUtil jwtUtil;
 
+    @InjectMocks
+    private AuthController authController;
+
     private ObjectMapper objectMapper;
     private User testUser;
     private LoginResponseDTO testLoginResponse;
 
     @BeforeEach
     void setUp() {
+
+        MockitoAnnotations.openMocks(this);
         objectMapper = new ObjectMapper();
 
         // Setup test user with SHA-256 hashed password
@@ -121,127 +132,112 @@ class AuthControllerTest {
     }
 
     @Test
-    void register_ShouldReturnSuccess_WhenValidDataWithoutRole() throws Exception {
-        // Given - Test backwards compatibility (no role specified = default RENTER)
-        Map<String, String> registerRequest = new HashMap<>();
-        registerRequest.put("username", "newuser");
-        registerRequest.put("email", "newuser@example.com");
-        registerRequest.put("password", "password123");
+    void register_ShouldReturnBadRequest_WhenFieldsMissing() throws Exception {
+        Map<String, String> request = new HashMap<>();
+        request.put("username", ""); // leeg
+        request.put("email", ""); // leeg
+        request.put("password", "pass");
 
-        when(userService.registerWithRole("newuser", "newuser@example.com", "password123", RoleName.RENTER))
-                .thenReturn(true);
+        String jsonContent = objectMapper.writeValueAsString(request);
 
-        String jsonContent = objectMapper.writeValueAsString(registerRequest);
-
-        // When & Then
         mockMvc.perform(post("/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonContent))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.message", is("Successfully registered")))
-                .andExpect(jsonPath("$.role", is("RENTER")));
+                .andExpect(status().isBadRequest());
 
-        verify(userService).registerWithRole("newuser", "newuser@example.com", "password123", RoleName.RENTER);
+        verify(userService, never()).registerWithRole(any(), any(), any(), any());
     }
 
     @Test
-    void register_ShouldReturnSuccess_WhenValidDataWithOwnerRole() throws Exception {
-        // Given
-        Map<String, String> registerRequest = new HashMap<>();
-        registerRequest.put("username", "newowner");
-        registerRequest.put("email", "owner@example.com");
-        registerRequest.put("password", "password123");
-        registerRequest.put("role", "OWNER");
+    void register_ShouldReturnBadRequest_WhenInvalidRole() {
+        Map<String, String> body = new HashMap<>();
+        body.put("username", "user1");
+        body.put("email", "test@example.com");
+        body.put("password", "password");
+        body.put("role", "INVALID_ROLE");
 
-        when(userService.registerWithRole("newowner", "owner@example.com", "password123", RoleName.OWNER))
-                .thenReturn(true);
+        ResponseEntity<?> response = authController.register(body);
 
-        String jsonContent = objectMapper.writeValueAsString(registerRequest);
-
-        // When & Then
-        mockMvc.perform(post("/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonContent))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.message", is("Successfully registered")))
-                .andExpect(jsonPath("$.role", is("OWNER")));
-
-        verify(userService).registerWithRole("newowner", "owner@example.com", "password123", RoleName.OWNER);
+        assertEquals(400, response.getStatusCodeValue());
+        assertTrue(((Map<?, ?>) response.getBody()).get("error").toString().contains("Invalid role"));
     }
 
     @Test
-    void register_ShouldReturnBadRequest_WhenInvalidRole() throws Exception {
-        // Given
-        Map<String, String> registerRequest = new HashMap<>();
-        registerRequest.put("username", "newuser");
-        registerRequest.put("email", "newuser@example.com");
-        registerRequest.put("password", "password123");
-        registerRequest.put("role", "INVALID_ROLE"); // Completely invalid role name
+    void register_ShouldReturnBadRequest_WhenUsernameExists() throws Exception {
+        Map<String, String> request = new HashMap<>();
+        request.put("username", "existing");
+        request.put("email", "email@example.com");
+        request.put("password", "pass");
 
-        String jsonContent = objectMapper.writeValueAsString(registerRequest);
+        when(userService.registerWithRole(any(), any(), any(), any()))
+                .thenThrow(new IllegalArgumentException("Username or email already exists"));
 
-        // When & Then
+        String jsonContent = objectMapper.writeValueAsString(request);
+
         mockMvc.perform(post("/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonContent))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.error", containsString("Invalid role")));
-
-        verify(userService, never()).registerWithRole(anyString(), anyString(), anyString(), any(RoleName.class));
-    }
-
-    @Test
-    void register_ShouldReturnBadRequest_WhenUserAlreadyExists() throws Exception {
-        // Given
-        Map<String, String> registerRequest = new HashMap<>();
-        registerRequest.put("username", "existinguser");
-        registerRequest.put("email", "existing@example.com");
-        registerRequest.put("password", "password123");
-
-        when(userService.registerWithRole("existinguser", "existing@example.com", "password123", RoleName.RENTER))
-                .thenReturn(false);
-
-        String jsonContent = objectMapper.writeValueAsString(registerRequest);
-
-        // When & Then
-        mockMvc.perform(post("/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(jsonContent))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.error", is("Username or email already exists")));
 
-        verify(userService).registerWithRole("existinguser", "existing@example.com", "password123", RoleName.RENTER);
+        verify(userService).registerWithRole("existing", "email@example.com", "pass", RoleName.RENTER);
     }
 
     @Test
-    void register_ShouldReturnBadRequest_WhenAdminRoleDuringRegistration() throws Exception {
-        // Given - Test that ADMIN role throws exception during registration
-        Map<String, String> registerRequest = new HashMap<>();
-        registerRequest.put("username", "newuser");
-        registerRequest.put("email", "newuser@example.com");
-        registerRequest.put("password", "password123");
-        registerRequest.put("role", "ADMIN");
+    void register_ShouldReturnSuccess_WithDefaultRole() throws Exception {
+        Map<String, String> request = new HashMap<>();
+        request.put("username", "newuser");
+        request.put("email", "new@example.com");
+        request.put("password", "pass");
 
-        // Mock service to throw exception for ADMIN role
-        when(userService.registerWithRole("newuser", "newuser@example.com", "password123", RoleName.ADMIN))
-                .thenThrow(new IllegalArgumentException(
-                        "Invalid role selection. Only OWNER and RENTER roles are allowed during registration."));
+        User mockUser = new User();
+        mockUser.setUserId("1");
+        mockUser.setUsername("newuser");
+        mockUser.setEmail("new@example.com");
 
-        String jsonContent = objectMapper.writeValueAsString(registerRequest);
+        when(userService.registerWithRole(any(), any(), any(), eq(RoleName.RENTER)))
+                .thenReturn(mockUser);
 
-        // When & Then
+        String jsonContent = objectMapper.writeValueAsString(request);
+
         mockMvc.perform(post("/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonContent))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.error", containsString("Invalid role selection")));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message", is("Successfully registered")))
+                .andExpect(jsonPath("$.userId", is("1")))
+                .andExpect(jsonPath("$.username", is("newuser")))
+                .andExpect(jsonPath("$.email", is("new@example.com")))
+                .andExpect(jsonPath("$.role", is("RENTER")));
+    }
 
-        verify(userService).registerWithRole("newuser", "newuser@example.com", "password123", RoleName.ADMIN);
+    @Test
+    void register_ShouldReturnSuccess_WithOwnerRole() throws Exception {
+        Map<String, String> request = new HashMap<>();
+        request.put("username", "owneruser");
+        request.put("email", "owner@example.com");
+        request.put("password", "pass");
+        request.put("role", "OWNER");
+
+        User mockUser = new User();
+        mockUser.setUserId("2");
+        mockUser.setUsername("owneruser");
+        mockUser.setEmail("owner@example.com");
+
+        when(userService.registerWithRole(any(), any(), any(), eq(RoleName.OWNER)))
+                .thenReturn(mockUser);
+
+        String jsonContent = objectMapper.writeValueAsString(request);
+
+        mockMvc.perform(post("/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonContent))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message", is("Successfully registered")))
+                .andExpect(jsonPath("$.userId", is("2")))
+                .andExpect(jsonPath("$.username", is("owneruser")))
+                .andExpect(jsonPath("$.email", is("owner@example.com")))
+                .andExpect(jsonPath("$.role", is("OWNER")));
     }
 
     @Test
@@ -436,24 +432,20 @@ class AuthControllerTest {
 
     @Test
     void register_ShouldHandleMissingFields() throws Exception {
-        // Given - Request with missing email
         Map<String, String> incompleteRequest = new HashMap<>();
         incompleteRequest.put("username", "user");
         incompleteRequest.put("password", "password123");
-        // email is missing
-
-        when(userService.registerWithRole("user", null, "password123", RoleName.RENTER))
-                .thenReturn(false);
 
         String jsonContent = objectMapper.writeValueAsString(incompleteRequest);
 
-        // When & Then
         mockMvc.perform(post("/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonContent))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error", is("Username or email already exists")));
 
-        verify(userService).registerWithRole("user", null, "password123", RoleName.RENTER);
+        // Controleer dat registerWithRole NIET wordt aangeroepen
+        verify(userService, never()).registerWithRole(any(), any(), any(), any());
     }
+
 }

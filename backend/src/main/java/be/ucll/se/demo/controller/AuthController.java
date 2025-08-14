@@ -53,14 +53,20 @@ public class AuthController {
         }
     }
 
-    // EXISTING: Basic registration (backwards compatible)
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
         String username = body.get("username");
         String email = body.get("email");
         String password = body.get("password");
 
-        // Default to RENTER role for backwards compatibility
+        // Check voor verplichte velden
+        if (username == null || username.isBlank() || email == null || email.isBlank()
+                || password == null || password.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Username or email already exists"));
+        }
+
+        // Default to RENTER role
         RoleName role = RoleName.RENTER;
         if (body.containsKey("role")) {
             try {
@@ -74,18 +80,24 @@ public class AuthController {
         System.out.println("Register attempt - username: " + username + ", email: " + email + ", role: " + role);
 
         try {
-            boolean success = userService.registerWithRole(username, email, password, role);
-            if (success) {
-                return ResponseEntity.ok(Map.of(
-                        "message", "Successfully registered",
-                        "role", role.toString()));
-            } else {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("error", "Username or email already exists"));
-            }
+            User user = userService.registerWithRole(username, email, password, role);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Successfully registered",
+                    "userId", user.getUserId(),
+                    "username", user.getUsername(),
+                    "email", user.getEmail(),
+                    "role", role.toString()));
+
         } catch (IllegalArgumentException e) {
+            // Hier wordt duplicate username/email afgehandeld
             return ResponseEntity.badRequest()
                     .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            System.err.println("❌ Unexpected registration error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Registration failed: " + e.getMessage()));
         }
     }
 
@@ -93,25 +105,28 @@ public class AuthController {
     @PostMapping("/register/enhanced")
     public ResponseEntity<?> registerEnhanced(@Valid @RequestBody RegisterRequestDTO registerDTO) {
         try {
-            boolean success = userService.registerWithRole(
+            // Verander van boolean naar User
+            User user = userService.registerWithRole(
                     registerDTO.getUsername(),
                     registerDTO.getEmail(),
                     registerDTO.getPassword(),
                     registerDTO.getRole());
 
-            if (success) {
-                return ResponseEntity.ok(Map.of(
-                        "message", "Successfully registered",
-                        "username", registerDTO.getUsername(),
-                        "email", registerDTO.getEmail(),
-                        "role", registerDTO.getRole().toString()));
-            } else {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("error", "Username or email already exists"));
-            }
+            return ResponseEntity.ok(Map.of(
+                    "message", "Successfully registered",
+                    "userId", user.getUserId(),
+                    "username", registerDTO.getUsername(),
+                    "email", registerDTO.getEmail(),
+                    "role", registerDTO.getRole().toString()));
+
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            System.err.println("❌ Enhanced registration error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Registration failed: " + e.getMessage()));
         }
     }
 

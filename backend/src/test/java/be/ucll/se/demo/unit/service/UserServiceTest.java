@@ -140,20 +140,28 @@ class UserServiceTest {
         when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
+        Role ownerRole = new Role();
+        ownerRole.setName(RoleName.OWNER);
+        when(roleRepository.findByName(RoleName.OWNER)).thenReturn(Optional.of(ownerRole));
+
+        // Zorg dat save het User object teruggeeft
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
         // When
-        boolean result = userService.registerWithRole(username, email, password, RoleName.OWNER);
+        User result = userService.registerWithRole(username, email, password, RoleName.OWNER);
 
         // Then
-        assertThat(result).isTrue();
+        assertThat(result).isNotNull();
+        assertThat(result.getUsername()).isEqualTo(username);
+        assertThat(result.getEmail()).isEqualTo(email);
+        assertThat(result.getPassword()).isEqualTo(hashPassword(password));
+        assertThat(result.getRoles()).contains(ownerRole);
 
+        // Verify repository save
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
-
         User savedUser = userCaptor.getValue();
-        assertThat(savedUser.getUsername()).isEqualTo(username);
-        assertThat(savedUser.getEmail()).isEqualTo(email);
-        assertThat(savedUser.getPassword()).isEqualTo(hashPassword(password)); // Updated to use SHA-256
-        assertThat(savedUser.getRoles()).contains(ownerRole);
+        assertThat(savedUser).isSameAs(result);
 
         verify(roleRepository).findByName(RoleName.OWNER);
     }
@@ -189,7 +197,6 @@ class UserServiceTest {
         // Then
         assertThat(result).isFalse();
         verify(userRepository).findByUsername(username);
-        verify(userRepository, never()).findByEmail(anyString());
         verify(userRepository, never()).save(any());
     }
 

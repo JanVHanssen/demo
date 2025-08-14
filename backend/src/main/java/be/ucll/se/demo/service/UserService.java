@@ -31,47 +31,47 @@ public class UserService {
     @Autowired
     private RoleRepository roleRepository;
 
-    // EXISTING: Basic registration (now with role support)
     public boolean register(String username, String email, String password) {
-        return registerWithRole(username, email, password, RoleName.RENTER); // Default to RENTER
+        try {
+            registerWithRole(username, email, password, RoleName.RENTER);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
-    // NEW: Registration with role choice
-    public boolean registerWithRole(String username, String email, String password, RoleName roleName) {
-        if (userRepository.findByUsername(username).isPresent()) {
-            return false; // gebruiker bestaat al
+    // Alternative fix: gebruik persist instead of save
+    @Transactional
+    public User registerWithRole(String username, String email, String password, RoleName roleName) {
+        boolean usernameTaken = userRepository.findByUsername(username).isPresent();
+        boolean emailTaken = userRepository.findByEmail(email).isPresent();
+
+        if (usernameTaken || emailTaken) {
+            throw new IllegalArgumentException("Username or email already exists");
         }
 
-        if (userRepository.findByEmail(email).isPresent()) {
-            return false; // email bestaat al
-        }
-
-        // Validate role selection during registration (only OWNER and RENTER allowed)
         if (roleName != RoleName.OWNER && roleName != RoleName.RENTER) {
             throw new IllegalArgumentException(
                     "Invalid role selection. Only OWNER and RENTER roles are allowed during registration.");
         }
 
+        // Haal de role op VOOR je de user maakt
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new IllegalArgumentException("Role not found: " + roleName));
+
         String hashedPassword = hashPassword(password);
         User user = new User();
-        user.setUserId(UUID.randomUUID().toString()); // Ensure userId is set
+        // NIET user.setUserId() - laat Hibernate de ID genereren
         user.setUsername(username);
         user.setEmail(email);
         user.setPassword(hashedPassword);
-        user.setEnabled(true); // Set enabled by default
+        user.setEnabled(true);
 
-        // Initialize roles set if null
-        if (user.getRoles() == null) {
-            user.setRoles(new HashSet<>());
-        }
+        // Initialize roles set
+        user.setRoles(new HashSet<>());
+        user.addRole(role); // Voeg de role toe VOOR het saven
 
-        // Assign role
-        Role role = roleRepository.findByName(roleName)
-                .orElseThrow(() -> new IllegalArgumentException("Role not found: " + roleName));
-        user.addRole(role);
-
-        userRepository.save(user);
-        return true;
+        return userRepository.save(user);
     }
 
     // EXISTING: Login method
