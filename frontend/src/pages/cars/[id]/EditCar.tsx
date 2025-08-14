@@ -4,6 +4,8 @@ import Header from "../../../components/Header";
 import { CarType } from "../../../Types";
 import { updateCar, fetchCarById } from "../../../services/CarService";
 import type { Car } from "../../../Types";
+import { GetStaticProps } from "next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 
 export default function EditCarPage() {
   const router = useRouter();
@@ -235,3 +237,11 @@ export default function EditCarPage() {
     </div>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale || 'nl', ['common'])),
+    },
+  };
+};

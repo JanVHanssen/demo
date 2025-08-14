@@ -4,6 +4,8 @@ import { useTranslation } from "next-i18next";
 import { addRental } from "@/services/RentalService";
 import { fetchCarsByOwner } from "@/services/CarService";
 import { Car } from "../Types";
+import { GetStaticProps } from "next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 
 const AddRental = () => {
   const router = useRouter();
@@ -312,6 +314,14 @@ const AddRental = () => {
       </form>
     </div>
   );
+};
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale || 'nl', ['common'])),
+    },
+  };
 };
 
 export default AddRental;

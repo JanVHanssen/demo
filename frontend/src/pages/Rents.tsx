@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { fetchUserRents, deleteRent } from "../services/RentService";
 import Header from "../components/Header";
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";

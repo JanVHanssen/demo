@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { getAllRentals, deleteRental } from "@/services/RentalService";
 import Link from "next/link";
 import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { Rental } from "@/Types";
 import { useRouter } from "next/router";
+import { GetStaticProps } from "next";
 
 export default function RentalsPage() {
   const [rentals, setRentals] = useState<Rental[]>([]);
@@ -154,4 +156,14 @@ export default function RentalsPage() {
       </main>
     </div>
   );
+
+  
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale || 'nl', ['common'])),
+    },
+  };
+};
