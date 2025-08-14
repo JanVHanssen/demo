@@ -16,6 +16,7 @@ import be.ucll.se.demo.model.RoleName;
 import be.ucll.se.demo.model.User;
 import be.ucll.se.demo.repository.RoleRepository;
 import be.ucll.se.demo.repository.UserRepository;
+import java.security.MessageDigest;
 
 @Service
 @Transactional
@@ -150,9 +151,14 @@ public class UserService {
                 .orElse(Set.of());
     }
 
-    // EXISTING: Password methods
     private String hashPassword(String password) {
-        return Base64.getEncoder().encodeToString(password.getBytes());
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(password.getBytes());
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to hash password", e);
+        }
     }
 
     private boolean verifyPassword(String raw, String hashed) {
