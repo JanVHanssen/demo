@@ -51,7 +51,7 @@ public class DataInitializer implements CommandLineRunner {
             User admin = new User();
             admin.setUsername("admin");
             admin.setEmail("admin@car4rent.com");
-            admin.setPassword(Base64.getEncoder().encodeToString("admin123".getBytes()));
+            admin.setPassword(passwordEncoder.encode("admin123")); // BCrypt encoding!
             admin.setEnabled(true);
 
             // Add admin role
