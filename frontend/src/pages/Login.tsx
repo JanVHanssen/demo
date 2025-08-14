@@ -38,20 +38,20 @@ export default function Login() {
         roles: loginResponse.roles
       });
       
-      // Redirect based on user role or to dashboard
+      // Redirect based on user role
       const userRoles = loginResponse.roles;
       
       // Priority-based redirect (Admin has highest priority)
       if (userRoles.includes('ADMIN')) {
-        router.push('/dashboard');
+        router.push('/index');
       } else if (userRoles.includes('ACCOUNTANT')) {
-        router.push('/dashboard');
+        router.push('/index');
       } else if (userRoles.includes('OWNER')) {
-        router.push('/dashboard');
+        router.push('/index');
       } else if (userRoles.includes('RENTER')) {
-        router.push('/dashboard');
+        router.push('/index');
       } else {
-        router.push('/dashboard');
+        router.push('/index');
       }
       
     } catch (err: any) {
@@ -141,7 +141,7 @@ export default function Login() {
               {t('auth.noAccount', 'No account yet?')}{' '}
               <button
                 type="button"
-                onClick={() => router.push('/register')}
+                onClick={() => router.push('/Register')}
                 className="text-blue-600 hover:text-blue-700 font-medium"
               >
                 {t('auth.registerHere', 'Register here')}

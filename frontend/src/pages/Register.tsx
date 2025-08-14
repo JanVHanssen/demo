@@ -223,7 +223,7 @@ export default function Register() {
               {t('register.alreadyHaveAccount')}{' '}
               <button
                 type="button"
-                onClick={() => router.push('/login')}
+                onClick={() => router.push('/Login')}
                 className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
               >
                 {t('register.loginHere')}

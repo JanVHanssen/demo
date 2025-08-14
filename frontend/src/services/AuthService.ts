@@ -164,7 +164,7 @@ export function logout(): void {
   localStorage.removeItem('user');
   
   // Redirect to login page
-  window.location.href = '/login';
+  window.location.href = '/Login';
 }
 
 export function isAuthenticated(): boolean {
