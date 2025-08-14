@@ -238,10 +238,3 @@ export default function EditCarPage() {
   );
 }
 
-export const getStaticProps: GetStaticProps = async ({ locale }) => {
-  return {
-    props: {
-      ...(await serverSideTranslations(locale || 'nl', ['common'])),
-    },
-  };
-};
