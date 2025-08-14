@@ -9,8 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.Base64;
+import java.util.List;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -38,15 +39,14 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initializeDefaultAdmin() {
-        boolean adminExists = userRepository.findByRole(RoleName.ADMIN)
-                .stream()
-                .anyMatch(User::isEnabled);
+        List<User> admins = userRepository.findByRole(RoleName.ADMIN);
+        boolean adminExists = admins.stream().anyMatch(User::isEnabled);
 
         if (!adminExists) {
             User admin = new User();
             admin.setUsername("admin");
             admin.setEmail("admin@car4rent.com");
-            admin.setPassword(hashPassword("admin123")); // Simple hash
+            admin.setPassword(hashPassword("admin123")); // SHA-256 hash
             admin.setEnabled(true);
 
             Role adminRole = roleRepository.findByName(RoleName.ADMIN)
@@ -58,11 +58,20 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
+    // Exact dezelfde SHA-256 hashfunctie als in UserService
     private String hashPassword(String password) {
         try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(password.getBytes());
-            return Base64.getEncoder().encodeToString(hash);
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1)
+                    hexString.append('0');
+                hexString.append(hex);
+            }
+            return hexString.toString();
         } catch (Exception e) {
             throw new RuntimeException("Failed to hash password", e);
         }

@@ -4,6 +4,8 @@ import { useTranslation } from "next-i18next";
 import { addRent } from "@/services/RentService";
 import { getAllRentals } from "@/services/RentalService";
 import { Rental } from "@/Types";
+import { GetStaticProps } from "next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 
 const AddRentPage = () => {
   const router = useRouter();
@@ -363,6 +365,14 @@ const AddRentPage = () => {
       </form>
     </div>
   );
+};
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale || 'nl', ['common'])),
+    },
+  };
 };
 
 export default AddRentPage;

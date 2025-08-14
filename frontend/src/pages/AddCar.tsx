@@ -4,6 +4,8 @@ import Header from "../components/Header";
 import { addCar } from "../services/CarService";
 import { CarType } from "../Types";
 import { useRouter } from "next/router";
+import { GetStaticProps } from "next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 
 export default function AddCarPage() {
   const { t } = useTranslation('common');
@@ -274,3 +276,11 @@ export default function AddCarPage() {
     </div>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale || 'nl', ['common'])),
+    },
+  };
+};

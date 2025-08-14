@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";
 import { Rent } from "../Types";
+import { GetStaticProps } from "next";
 
 export default function RentsPage() {
   const [rents, setRents] = useState<Rent[]>([]);
@@ -171,3 +172,10 @@ export default function RentsPage() {
     </div>
   );
 }
+export const getStaticProps: GetStaticProps = async ({ locale }) => {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale || 'nl', ['common'])),
+    },
+  };
+};
