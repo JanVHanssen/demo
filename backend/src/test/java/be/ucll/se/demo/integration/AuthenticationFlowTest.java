@@ -1,4 +1,4 @@
-package be.ucll.se.demo.Integration;
+package be.ucll.se.demo.integration;
 
 import be.ucll.se.demo.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;

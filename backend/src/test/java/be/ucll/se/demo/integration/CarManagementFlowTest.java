@@ -1,4 +1,4 @@
-package be.ucll.se.demo.Integration;
+package be.ucll.se.demo.integration;
 
 import be.ucll.se.demo.dto.CarCreateDTO;
 import be.ucll.se.demo.dto.CarDTO;
