@@ -194,4 +194,9 @@ public class UserService {
         }
         return null;
     }
+
+    public User findByEmailOrUsername(String emailOrUsername) {
+        return userRepository.findByEmail(emailOrUsername)
+                .orElse(userRepository.findByUsername(emailOrUsername).orElse(null));
+    }
 }

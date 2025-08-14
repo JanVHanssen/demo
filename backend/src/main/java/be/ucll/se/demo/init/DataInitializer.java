@@ -1,4 +1,3 @@
-// DataInitializer.java
 package be.ucll.se.demo.init;
 
 import be.ucll.se.demo.model.Role;
@@ -10,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import java.security.MessageDigest;
 import java.util.Base64;
 
 @Component
@@ -23,10 +23,7 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Initialize roles if they don't exist
         initializeRoles();
-
-        // Create default admin user if no admin exists
         initializeDefaultAdmin();
     }
 
@@ -41,29 +38,33 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initializeDefaultAdmin() {
-        // Check if any admin user exists
         boolean adminExists = userRepository.findByRole(RoleName.ADMIN)
                 .stream()
                 .anyMatch(User::isEnabled);
 
         if (!adminExists) {
-            // Create default admin user
             User admin = new User();
             admin.setUsername("admin");
             admin.setEmail("admin@car4rent.com");
-            admin.setPassword(passwordEncoder.encode("admin123")); // BCrypt encoding!
+            admin.setPassword(hashPassword("admin123")); // Simple hash
             admin.setEnabled(true);
 
-            // Add admin role
             Role adminRole = roleRepository.findByName(RoleName.ADMIN)
                     .orElseThrow(() -> new RuntimeException("Admin role not found"));
             admin.addRole(adminRole);
 
             userRepository.save(admin);
-            System.out.println("✅ Created default admin user:");
-            System.out.println("   Username: admin");
-            System.out.println("   Email: admin@car4rent.com");
-            System.out.println("   Password: admin123");
+            System.out.println("✅ Created default admin user");
+        }
+    }
+
+    private String hashPassword(String password) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(password.getBytes());
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to hash password", e);
         }
     }
 }

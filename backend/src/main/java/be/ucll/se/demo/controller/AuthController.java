@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.MessageDigest;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +29,17 @@ public class AuthController {
     public AuthController(UserService userService, JwtUtil jwtUtil) {
         this.userService = userService;
         this.jwtUtil = jwtUtil;
+    }
+
+    // Helper method for password hashing
+    private String hashPassword(String password) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(password.getBytes());
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to hash password", e);
+        }
     }
 
     // EXISTING: Basic registration (backwards compatible)
@@ -91,31 +104,50 @@ public class AuthController {
         }
     }
 
-    // UPDATED: Enhanced login with role information
+    // UPDATED: Enhanced login with proper password verification
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
         String username = body.get("username");
         String password = body.get("password");
 
+        System.out.println("=== LOGIN DEBUG ===");
         System.out.println("Login attempt for user: " + username);
+        System.out.println("Password received: " + password);
 
-        LoginResponseDTO loginResponse = userService.loginWithRoles(username, password);
+        // Hash the input password to compare with stored hash
+        String hashedInputPassword = hashPassword(password);
+        System.out.println("Hashed input password: " + hashedInputPassword);
 
-        if (loginResponse != null) {
-            System.out.println("User found: " + loginResponse.getUsername() +
-                    ", email: " + loginResponse.getEmail() +
-                    ", roles: " + loginResponse.getRoles());
+        // Get user from database
+        User user = userService.findByEmailOrUsername(username);
+        if (user != null) {
+            System.out.println("User found: " + user.getEmail());
+            System.out.println("User enabled: " + user.isEnabled());
+            System.out.println("Stored password hash: " + user.getPassword());
+            System.out.println("Passwords match: " + user.getPassword().equals(hashedInputPassword));
 
-            String token = jwtUtil.generateToken(loginResponse.getEmail());
-            loginResponse.setToken(token);
+            // Check if user is enabled and password matches
+            if (user.isEnabled() && user.getPassword().equals(hashedInputPassword)) {
+                // Create login response
+                LoginResponseDTO loginResponse = new LoginResponseDTO();
+                loginResponse.setUserId(user.getUserId());
+                loginResponse.setUsername(user.getUsername());
+                loginResponse.setEmail(user.getEmail());
+                loginResponse.setRoles(userService.getUserRoles(user.getEmail()));
 
-            System.out.println("Generated token with email: " + loginResponse.getEmail());
-            return ResponseEntity.ok(loginResponse);
+                String token = jwtUtil.generateToken(user.getEmail());
+                loginResponse.setToken(token);
+
+                System.out.println("✅ Login successful for: " + user.getEmail());
+                return ResponseEntity.ok(loginResponse);
+            }
         } else {
-            System.out.println("Login failed for user: " + username);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid credentials or account disabled"));
+            System.out.println("❌ User not found: " + username);
         }
+
+        System.out.println("❌ Login failed for user: " + username);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "Invalid credentials or account disabled"));
     }
 
     // UPDATED: Enhanced token validation with role information
