@@ -5,7 +5,6 @@ import be.ucll.se.demo.model.Rent;
 import be.ucll.se.demo.repository.RentRepository;
 import be.ucll.se.demo.repository.CarRepository;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,15 +16,17 @@ import java.util.Optional;
 @Transactional
 public class RentService {
 
-    @Autowired
-    private NotificationService notificationService;
-
+    private final NotificationService notificationService;
     private final RentRepository rentRepository;
     private final CarRepository carRepository;
 
-    public RentService(RentRepository rentRepository, CarRepository carRepository) {
+    // ✅ Constructor-injectie voor ALLE dependencies
+    public RentService(RentRepository rentRepository,
+            CarRepository carRepository,
+            NotificationService notificationService) {
         this.rentRepository = rentRepository;
         this.carRepository = carRepository;
+        this.notificationService = notificationService;
     }
 
     public List<Rent> getAllRents() {
@@ -51,7 +52,7 @@ public class RentService {
         // Save rent first
         Rent savedRent = rentRepository.save(rent);
 
-        // Send notifications
+        // Verstuur notificaties
         notificationService.notifyOwnerOfNewBooking(savedRent);
         notificationService.notifyRenterOfConfirmation(savedRent);
 

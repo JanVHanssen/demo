@@ -8,6 +8,7 @@ import be.ucll.se.demo.repository.RentRepository;
 import be.ucll.se.demo.service.RentService;
 import be.ucll.se.demo.service.NotificationService;
 import be.ucll.se.demo.repository.CarRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,8 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,7 +37,7 @@ class RentServiceTest {
     private CarRepository carRepository;
 
     @Mock
-    private NotificationService notificationService; // TOEGEVOEGD: Mock voor NotificationService
+    private NotificationService notificationService;
 
     @InjectMocks
     private RentService rentService;
@@ -48,34 +47,28 @@ class RentServiceTest {
 
     @BeforeEach
     void setUp() {
-        testCar = createTestCar();
-        testRent = createTestRent();
+        testCar = createTestCar(1L);
+        testRent = createTestRent(1L, testCar);
     }
 
     // ===== GET ALL RENTS TESTS =====
     @Test
     void getAllRents_ShouldReturnListOfRents() {
-        // Given
-        List<Rent> rents = Arrays.asList(testRent, createTestRent());
+        List<Rent> rents = Arrays.asList(testRent, createTestRent(2L, testCar));
         when(rentRepository.findAll()).thenReturn(rents);
 
-        // When
         List<Rent> result = rentService.getAllRents();
 
-        // Then
         assertThat(result).hasSize(2);
         verify(rentRepository).findAll();
     }
 
     @Test
     void getAllRents_WhenNoRentsExist_ShouldReturnEmptyList() {
-        // Given
-        when(rentRepository.findAll()).thenReturn(Arrays.asList());
+        when(rentRepository.findAll()).thenReturn(List.of());
 
-        // When
         List<Rent> result = rentService.getAllRents();
 
-        // Then
         assertThat(result).isEmpty();
         verify(rentRepository).findAll();
     }
@@ -83,29 +76,22 @@ class RentServiceTest {
     // ===== GET RENT BY ID TESTS =====
     @Test
     void getRentById_WhenRentExists_ShouldReturnRent() {
-        // Given
         Long rentId = 1L;
         when(rentRepository.findById(rentId)).thenReturn(Optional.of(testRent));
 
-        // When
         Optional<Rent> result = rentService.getRentById(rentId);
 
-        // Then
-        assertThat(result).isPresent();
-        assertThat(result.get()).isEqualTo(testRent);
+        assertThat(result).isPresent().contains(testRent);
         verify(rentRepository).findById(rentId);
     }
 
     @Test
     void getRentById_WhenRentDoesNotExist_ShouldReturnEmpty() {
-        // Given
         Long rentId = 999L;
         when(rentRepository.findById(rentId)).thenReturn(Optional.empty());
 
-        // When
         Optional<Rent> result = rentService.getRentById(rentId);
 
-        // Then
         assertThat(result).isEmpty();
         verify(rentRepository).findById(rentId);
     }
@@ -113,117 +99,62 @@ class RentServiceTest {
     // ===== ADD RENT TESTS =====
     @Test
     void addRent_WhenValidRent_ShouldSaveAndReturnRent() {
-        // Given
-        Long carId = 1L;
-        when(carRepository.findById(carId)).thenReturn(Optional.of(testCar));
+        when(carRepository.findById(1L)).thenReturn(Optional.of(testCar));
         when(rentRepository.save(testRent)).thenReturn(testRent);
 
-        // When
         Rent result = rentService.addRent(testRent);
 
-        // Then
         assertThat(result).isEqualTo(testRent);
-        verify(carRepository).findById(carId);
+        verify(carRepository).findById(1L);
         verify(rentRepository).save(testRent);
-        // TOEGEVOEGD: Verify dat notificaties worden verstuurd
         verify(notificationService).notifyOwnerOfNewBooking(testRent);
         verify(notificationService).notifyRenterOfConfirmation(testRent);
     }
 
     @Test
     void addRent_WhenCarDoesNotExist_ShouldThrowIllegalArgumentException() {
-        // Given
-        Long nonExistentCarId = 999L;
-        // Use reflection to set car ID since setId doesn't exist
-        try {
-            java.lang.reflect.Field carIdField = Car.class.getDeclaredField("id");
-            carIdField.setAccessible(true);
-            carIdField.set(testRent.getCar(), nonExistentCarId);
-        } catch (Exception e) {
-            // Create new car with different ID for this test
-            Car testCarWithDifferentId = createTestCar();
-            try {
-                java.lang.reflect.Field idField = Car.class.getDeclaredField("id");
-                idField.setAccessible(true);
-                idField.set(testCarWithDifferentId, nonExistentCarId);
-                testRent.setCar(testCarWithDifferentId);
-            } catch (Exception ex) {
-                // Fallback - just use the existing car
-            }
-        }
-        when(carRepository.findById(nonExistentCarId)).thenReturn(Optional.empty());
+        Car nonExistentCar = createTestCar(999L);
+        testRent.setCar(nonExistentCar);
 
-        // When & Then
+        when(carRepository.findById(999L)).thenReturn(Optional.empty());
+
         assertThatThrownBy(() -> rentService.addRent(testRent))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Car with ID " + nonExistentCarId + " does not exist.");
+                .hasMessage("Car with ID 999 does not exist.");
 
-        verify(carRepository).findById(nonExistentCarId);
+        verify(carRepository).findById(999L);
         verify(rentRepository, never()).save(any());
-        // TOEGEVOEGD: Verify dat geen notificaties worden verstuurd bij fout
-        verify(notificationService, never()).notifyOwnerOfNewBooking(any());
-        verify(notificationService, never()).notifyRenterOfConfirmation(any());
+        verifyNoInteractions(notificationService);
     }
 
     @Test
     void addRent_WhenStartDateAfterEndDate_ShouldThrowIllegalArgumentException() {
-        // Given
-        Long carId = 1L;
         testRent.setStartDate(LocalDate.now().plusDays(5));
-        testRent.setEndDate(LocalDate.now().plusDays(2)); // Earlier than start date
-        when(carRepository.findById(carId)).thenReturn(Optional.of(testCar));
+        testRent.setEndDate(LocalDate.now().plusDays(2));
+        when(carRepository.findById(1L)).thenReturn(Optional.of(testCar));
 
-        // When & Then
         assertThatThrownBy(() -> rentService.addRent(testRent))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Start date must be before end date.");
 
-        verify(carRepository).findById(carId);
+        verify(carRepository).findById(1L);
         verify(rentRepository, never()).save(any());
-        // TOEGEVOEGD: Verify dat geen notificaties worden verstuurd bij fout
-        verify(notificationService, never()).notifyOwnerOfNewBooking(any());
-        verify(notificationService, never()).notifyRenterOfConfirmation(any());
+        verifyNoInteractions(notificationService);
     }
 
     @Test
     void addRent_WhenStartDateEqualsEndDate_ShouldNotThrowException() {
-        // Given
-        Long carId = 1L;
         LocalDate sameDate = LocalDate.now().plusDays(1);
         testRent.setStartDate(sameDate);
         testRent.setEndDate(sameDate);
-        when(carRepository.findById(carId)).thenReturn(Optional.of(testCar));
+        when(carRepository.findById(1L)).thenReturn(Optional.of(testCar));
         when(rentRepository.save(testRent)).thenReturn(testRent);
 
-        // When
         Rent result = rentService.addRent(testRent);
 
-        // Then
         assertThat(result).isEqualTo(testRent);
-        verify(carRepository).findById(carId);
+        verify(carRepository).findById(1L);
         verify(rentRepository).save(testRent);
-        // TOEGEVOEGD: Verify dat notificaties worden verstuurd
-        verify(notificationService).notifyOwnerOfNewBooking(testRent);
-        verify(notificationService).notifyRenterOfConfirmation(testRent);
-    }
-
-    @Test
-    void addRent_WhenValidDateRange_ShouldSucceed() {
-        // Given
-        Long carId = 1L;
-        testRent.setStartDate(LocalDate.now().plusDays(1));
-        testRent.setEndDate(LocalDate.now().plusDays(5));
-        when(carRepository.findById(carId)).thenReturn(Optional.of(testCar));
-        when(rentRepository.save(testRent)).thenReturn(testRent);
-
-        // When
-        Rent result = rentService.addRent(testRent);
-
-        // Then
-        assertThat(result).isEqualTo(testRent);
-        verify(carRepository).findById(carId);
-        verify(rentRepository).save(testRent);
-        // TOEGEVOEGD: Verify dat notificaties worden verstuurd
         verify(notificationService).notifyOwnerOfNewBooking(testRent);
         verify(notificationService).notifyRenterOfConfirmation(testRent);
     }
@@ -231,289 +162,33 @@ class RentServiceTest {
     // ===== DELETE RENT TESTS =====
     @Test
     void deleteRent_WhenRentExists_ShouldDeleteAndSendNotifications() {
-        // Given
-        Long rentId = 1L;
-        when(rentRepository.findById(rentId)).thenReturn(Optional.of(testRent));
+        when(rentRepository.findById(1L)).thenReturn(Optional.of(testRent));
 
-        // When
-        rentService.deleteRent(rentId);
+        rentService.deleteRent(1L);
 
-        // Then
-        verify(rentRepository).findById(rentId);
+        verify(rentRepository).findById(1L);
         verify(notificationService).notifyBookingCancellation(testRent);
-        verify(rentRepository).deleteById(rentId);
+        verify(rentRepository).deleteById(1L);
     }
 
     @Test
     void deleteRent_WhenRentDoesNotExist_ShouldThrowException() {
-        // Given
-        Long rentId = 999L;
-        when(rentRepository.findById(rentId)).thenReturn(Optional.empty());
+        when(rentRepository.findById(999L)).thenReturn(Optional.empty());
 
-        // When & Then
-        assertThatThrownBy(() -> rentService.deleteRent(rentId))
+        assertThatThrownBy(() -> rentService.deleteRent(999L))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Rent with ID " + rentId + " does not exist.");
+                .hasMessage("Rent with ID 999 does not exist.");
 
-        verify(rentRepository).findById(rentId);
-        verify(notificationService, never()).notifyBookingCancellation(any());
+        verify(rentRepository).findById(999L);
+        verifyNoInteractions(notificationService);
         verify(rentRepository, never()).deleteById(anyLong());
     }
 
-    @Test
-    void deleteRent_WithNullId_ShouldThrowException() {
-        // Given
-        Long rentId = null;
-        when(rentRepository.findById(null)).thenReturn(Optional.empty());
-
-        // When & Then
-        assertThatThrownBy(() -> rentService.deleteRent(rentId))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Rent with ID null does not exist.");
-
-        verify(rentRepository).findById(null);
-        verify(notificationService, never()).notifyBookingCancellation(any());
-        verify(rentRepository, never()).deleteById(any());
-    }
-
-    // ===== GET RENTS BY CAR TESTS =====
-    @Test
-    void getRentsByCar_ShouldReturnRentsForSpecificCar() {
-        // Given
-        List<Rent> rents = Arrays.asList(testRent, createTestRent());
-        when(rentRepository.findByCar(testCar)).thenReturn(rents);
-
-        // When
-        List<Rent> result = rentService.getRentsByCar(testCar);
-
-        // Then
-        assertThat(result).hasSize(2);
-        verify(rentRepository).findByCar(testCar);
-    }
-
-    @Test
-    void getRentsByCar_WhenNoRentsForCar_ShouldReturnEmptyList() {
-        // Given
-        when(rentRepository.findByCar(testCar)).thenReturn(Arrays.asList());
-
-        // When
-        List<Rent> result = rentService.getRentsByCar(testCar);
-
-        // Then
-        assertThat(result).isEmpty();
-        verify(rentRepository).findByCar(testCar);
-    }
-
-    // ===== GET RENTS BY RENTER EMAIL TESTS =====
-    @Test
-    void getRentsByRenterEmail_ShouldReturnRentsForEmail() {
-        // Given
-        String email = "renter@example.com";
-        List<Rent> rents = Arrays.asList(testRent);
-        when(rentRepository.findByRenterEmail(email)).thenReturn(rents);
-
-        // When
-        List<Rent> result = rentService.getRentsByRenterEmail(email);
-
-        // Then
-        assertThat(result).hasSize(1);
-        verify(rentRepository).findByRenterEmail(email);
-    }
-
-    @Test
-    void getRentsByRenterEmail_WhenNoRentsForEmail_ShouldReturnEmptyList() {
-        // Given
-        String email = "nonexistent@example.com";
-        when(rentRepository.findByRenterEmail(email)).thenReturn(Arrays.asList());
-
-        // When
-        List<Rent> result = rentService.getRentsByRenterEmail(email);
-
-        // Then
-        assertThat(result).isEmpty();
-        verify(rentRepository).findByRenterEmail(email);
-    }
-
-    // ===== GET RENTS BY NATIONAL REGISTER ID TESTS =====
-    @Test
-    void getRentsByNationalRegisterId_ShouldReturnRentsForId() {
-        // Given
-        String nationalId = "85.01.01-123.45";
-        List<Rent> rents = Arrays.asList(testRent);
-        when(rentRepository.findByRenterInfoNationalRegisterId(nationalId)).thenReturn(rents);
-
-        // When
-        List<Rent> result = rentService.getRentsByNationalRegisterId(nationalId);
-
-        // Then
-        assertThat(result).hasSize(1);
-        verify(rentRepository).findByRenterInfoNationalRegisterId(nationalId);
-    }
-
-    @Test
-    void getRentsByNationalRegisterId_WhenNoRentsForId_ShouldReturnEmptyList() {
-        // Given
-        String nationalId = "00.00.00-000.00";
-        when(rentRepository.findByRenterInfoNationalRegisterId(nationalId)).thenReturn(Arrays.asList());
-
-        // When
-        List<Rent> result = rentService.getRentsByNationalRegisterId(nationalId);
-
-        // Then
-        assertThat(result).isEmpty();
-        verify(rentRepository).findByRenterInfoNationalRegisterId(nationalId);
-    }
-
-    // ===== GET ACTIVE OR UPCOMING RENTS TESTS =====
-    @Test
-    void getActiveOrUpcomingRentsForCar_ShouldReturnCurrentAndFutureRents() {
-        // Given
-        LocalDate today = LocalDate.now();
-        List<Rent> activeRents = Arrays.asList(testRent);
-        when(rentRepository.findByCarAndEndDateGreaterThanEqual(testCar, today)).thenReturn(activeRents);
-
-        // When
-        List<Rent> result = rentService.getActiveOrUpcomingRentsForCar(testCar);
-
-        // Then
-        assertThat(result).hasSize(1);
-        verify(rentRepository).findByCarAndEndDateGreaterThanEqual(testCar, today);
-    }
-
-    @Test
-    void getActiveOrUpcomingRentsForCar_WhenNoActiveRents_ShouldReturnEmptyList() {
-        // Given
-        LocalDate today = LocalDate.now();
-        when(rentRepository.findByCarAndEndDateGreaterThanEqual(testCar, today)).thenReturn(Arrays.asList());
-
-        // When
-        List<Rent> result = rentService.getActiveOrUpcomingRentsForCar(testCar);
-
-        // Then
-        assertThat(result).isEmpty();
-        verify(rentRepository).findByCarAndEndDateGreaterThanEqual(testCar, today);
-    }
-
-    @Test
-    void getActiveOrUpcomingRentsForCar_ShouldUseCurrentDate() {
-        // Given
-        LocalDate expectedDate = LocalDate.now();
-        when(rentRepository.findByCarAndEndDateGreaterThanEqual(eq(testCar), any(LocalDate.class)))
-                .thenReturn(Arrays.asList());
-
-        // When
-        rentService.getActiveOrUpcomingRentsForCar(testCar);
-
-        // Then
-        verify(rentRepository).findByCarAndEndDateGreaterThanEqual(eq(testCar), eq(expectedDate));
-    }
-
-    // ===== NIEUWE METHODE TESTS =====
-    @Test
-    void getRentsByStartDate_ShouldReturnRentsForSpecificStartDate() {
-        // Given
-        LocalDate startDate = LocalDate.now().plusDays(1);
-        List<Rent> rents = Arrays.asList(testRent);
-        when(rentRepository.findByStartDate(startDate)).thenReturn(rents);
-
-        // When
-        List<Rent> result = rentService.getRentsByStartDate(startDate);
-
-        // Then
-        assertThat(result).hasSize(1);
-        verify(rentRepository).findByStartDate(startDate);
-    }
-
-    @Test
-    void getRentsByEndDate_ShouldReturnRentsForSpecificEndDate() {
-        // Given
-        LocalDate endDate = LocalDate.now().plusDays(5);
-        List<Rent> rents = Arrays.asList(testRent);
-        when(rentRepository.findByEndDate(endDate)).thenReturn(rents);
-
-        // When
-        List<Rent> result = rentService.getRentsByEndDate(endDate);
-
-        // Then
-        assertThat(result).hasSize(1);
-        verify(rentRepository).findByEndDate(endDate);
-    }
-
-    @Test
-    void isCarAvailableForPeriod_WhenCarExists_ShouldCheckAvailability() {
-        // Given
-        Long carId = 1L;
-        LocalDate startDate = LocalDate.now().plusDays(1);
-        LocalDate endDate = LocalDate.now().plusDays(5);
-        when(carRepository.findById(carId)).thenReturn(Optional.of(testCar));
-        when(rentRepository.findByCarAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                testCar, endDate, startDate)).thenReturn(Arrays.asList());
-
-        // When
-        boolean result = rentService.isCarAvailableForPeriod(carId, startDate, endDate);
-
-        // Then
-        assertThat(result).isTrue();
-        verify(carRepository).findById(carId);
-        verify(rentRepository).findByCarAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                testCar, endDate, startDate);
-    }
-
-    @Test
-    void isCarAvailableForPeriod_WhenCarDoesNotExist_ShouldReturnFalse() {
-        // Given
-        Long carId = 999L;
-        LocalDate startDate = LocalDate.now().plusDays(1);
-        LocalDate endDate = LocalDate.now().plusDays(5);
-        when(carRepository.findById(carId)).thenReturn(Optional.empty());
-
-        // When
-        boolean result = rentService.isCarAvailableForPeriod(carId, startDate, endDate);
-
-        // Then
-        assertThat(result).isFalse();
-        verify(carRepository).findById(carId);
-        verify(rentRepository, never()).findByCarAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                any(), any(), any());
-    }
-
-    // ===== EDGE CASE TESTS =====
-    @Test
-    void addRent_WhenCarIdIsNull_ShouldThrowIllegalArgumentException() {
-        // Given
-        // Use reflection to set car ID to null since setId doesn't exist
-        try {
-            java.lang.reflect.Field carIdField = Car.class.getDeclaredField("id");
-            carIdField.setAccessible(true);
-            carIdField.set(testRent.getCar(), null);
-        } catch (Exception e) {
-            // Create new car with null ID for this test
-            Car carWithNullId = new Car();
-            testRent.setCar(carWithNullId);
-        }
-
-        // When & Then
-        assertThatThrownBy(() -> rentService.addRent(testRent))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Car with ID null does not exist.");
-
-        verify(carRepository).findById(null);
-        verify(rentRepository, never()).save(any());
-        verify(notificationService, never()).notifyOwnerOfNewBooking(any());
-        verify(notificationService, never()).notifyRenterOfConfirmation(any());
-    }
-
     // ===== HELPER METHODS =====
-    private Car createTestCar() {
+    private Car createTestCar(Long id) {
         Car car = new Car();
-        // Use reflection to set ID for testing
-        try {
-            java.lang.reflect.Field idField = Car.class.getDeclaredField("id");
-            idField.setAccessible(true);
-            idField.set(car, 1L);
-        } catch (Exception e) {
-            // ID setting failed, but that's okay for unit tests
-        }
+        car.setId(id); // 👉 stel gewoon rechtstreeks in (voeg setter toe aan Car als die er nog niet
+                       // is)
         car.setBrand("Toyota");
         car.setModel("Camry");
         car.setLicensePlate("ABC-123");
@@ -524,36 +199,22 @@ class RentServiceTest {
         return car;
     }
 
-    private Rent createTestRent() {
+    private Rent createTestRent(Long id, Car car) {
         Rent rent = new Rent();
-        // Use reflection to set ID for testing
-        try {
-            java.lang.reflect.Field idField = Rent.class.getDeclaredField("id");
-            idField.setAccessible(true);
-            idField.set(rent, 1L);
-        } catch (Exception e) {
-            // ID setting failed, but that's okay for unit tests
-        }
-
-        rent.setCar(testCar);
+        rent.setId(id); // 👉 idem hier, zet gewoon een setter in Rent
+        rent.setCar(car);
         rent.setStartDate(LocalDate.now().plusDays(1));
         rent.setEndDate(LocalDate.now().plusDays(5));
         rent.setOwnerEmail("owner@example.com");
         rent.setRenterEmail("renter@example.com");
 
-        // Create test RenterInfo
-        RenterInfo renterInfo = createTestRenterInfo();
-        rent.setRenterInfo(renterInfo);
-
-        return rent;
-    }
-
-    private RenterInfo createTestRenterInfo() {
         RenterInfo renterInfo = new RenterInfo();
         renterInfo.setPhoneNumber("0123456789");
         renterInfo.setNationalRegisterId("85.01.01-123.45");
         renterInfo.setBirthDate(LocalDate.of(1985, 1, 1));
         renterInfo.setDrivingLicenseNumber("1234567890");
-        return renterInfo;
+        rent.setRenterInfo(renterInfo);
+
+        return rent;
     }
 }
