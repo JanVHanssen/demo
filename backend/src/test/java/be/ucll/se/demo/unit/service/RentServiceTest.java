@@ -6,6 +6,7 @@ import be.ucll.se.demo.model.Rent;
 import be.ucll.se.demo.model.CarType;
 import be.ucll.se.demo.repository.RentRepository;
 import be.ucll.se.demo.service.RentService;
+import be.ucll.se.demo.service.NotificationService;
 import be.ucll.se.demo.repository.CarRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,6 +36,9 @@ class RentServiceTest {
 
     @Mock
     private CarRepository carRepository;
+
+    @Mock
+    private NotificationService notificationService; // TOEGEVOEGD: Mock voor NotificationService
 
     @InjectMocks
     private RentService rentService;
@@ -120,6 +125,9 @@ class RentServiceTest {
         assertThat(result).isEqualTo(testRent);
         verify(carRepository).findById(carId);
         verify(rentRepository).save(testRent);
+        // TOEGEVOEGD: Verify dat notificaties worden verstuurd
+        verify(notificationService).notifyOwnerOfNewBooking(testRent);
+        verify(notificationService).notifyRenterOfConfirmation(testRent);
     }
 
     @Test
@@ -152,6 +160,9 @@ class RentServiceTest {
 
         verify(carRepository).findById(nonExistentCarId);
         verify(rentRepository, never()).save(any());
+        // TOEGEVOEGD: Verify dat geen notificaties worden verstuurd bij fout
+        verify(notificationService, never()).notifyOwnerOfNewBooking(any());
+        verify(notificationService, never()).notifyRenterOfConfirmation(any());
     }
 
     @Test
@@ -169,6 +180,9 @@ class RentServiceTest {
 
         verify(carRepository).findById(carId);
         verify(rentRepository, never()).save(any());
+        // TOEGEVOEGD: Verify dat geen notificaties worden verstuurd bij fout
+        verify(notificationService, never()).notifyOwnerOfNewBooking(any());
+        verify(notificationService, never()).notifyRenterOfConfirmation(any());
     }
 
     @Test
@@ -188,6 +202,9 @@ class RentServiceTest {
         assertThat(result).isEqualTo(testRent);
         verify(carRepository).findById(carId);
         verify(rentRepository).save(testRent);
+        // TOEGEVOEGD: Verify dat notificaties worden verstuurd
+        verify(notificationService).notifyOwnerOfNewBooking(testRent);
+        verify(notificationService).notifyRenterOfConfirmation(testRent);
     }
 
     @Test
@@ -206,31 +223,57 @@ class RentServiceTest {
         assertThat(result).isEqualTo(testRent);
         verify(carRepository).findById(carId);
         verify(rentRepository).save(testRent);
+        // TOEGEVOEGD: Verify dat notificaties worden verstuurd
+        verify(notificationService).notifyOwnerOfNewBooking(testRent);
+        verify(notificationService).notifyRenterOfConfirmation(testRent);
     }
 
     // ===== DELETE RENT TESTS =====
     @Test
-    void deleteRent_ShouldCallRepositoryDeleteById() {
+    void deleteRent_WhenRentExists_ShouldDeleteAndSendNotifications() {
         // Given
         Long rentId = 1L;
+        when(rentRepository.findById(rentId)).thenReturn(Optional.of(testRent));
 
         // When
         rentService.deleteRent(rentId);
 
         // Then
+        verify(rentRepository).findById(rentId);
+        verify(notificationService).notifyBookingCancellation(testRent);
         verify(rentRepository).deleteById(rentId);
     }
 
     @Test
-    void deleteRent_WithNullId_ShouldStillCallRepository() {
+    void deleteRent_WhenRentDoesNotExist_ShouldThrowException() {
+        // Given
+        Long rentId = 999L;
+        when(rentRepository.findById(rentId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> rentService.deleteRent(rentId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Rent with ID " + rentId + " does not exist.");
+
+        verify(rentRepository).findById(rentId);
+        verify(notificationService, never()).notifyBookingCancellation(any());
+        verify(rentRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void deleteRent_WithNullId_ShouldThrowException() {
         // Given
         Long rentId = null;
+        when(rentRepository.findById(null)).thenReturn(Optional.empty());
 
-        // When
-        rentService.deleteRent(rentId);
+        // When & Then
+        assertThatThrownBy(() -> rentService.deleteRent(rentId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Rent with ID null does not exist.");
 
-        // Then
-        verify(rentRepository).deleteById(rentId);
+        verify(rentRepository).findById(null);
+        verify(notificationService, never()).notifyBookingCancellation(any());
+        verify(rentRepository, never()).deleteById(any());
     }
 
     // ===== GET RENTS BY CAR TESTS =====
@@ -365,6 +408,75 @@ class RentServiceTest {
         verify(rentRepository).findByCarAndEndDateGreaterThanEqual(eq(testCar), eq(expectedDate));
     }
 
+    // ===== NIEUWE METHODE TESTS =====
+    @Test
+    void getRentsByStartDate_ShouldReturnRentsForSpecificStartDate() {
+        // Given
+        LocalDate startDate = LocalDate.now().plusDays(1);
+        List<Rent> rents = Arrays.asList(testRent);
+        when(rentRepository.findByStartDate(startDate)).thenReturn(rents);
+
+        // When
+        List<Rent> result = rentService.getRentsByStartDate(startDate);
+
+        // Then
+        assertThat(result).hasSize(1);
+        verify(rentRepository).findByStartDate(startDate);
+    }
+
+    @Test
+    void getRentsByEndDate_ShouldReturnRentsForSpecificEndDate() {
+        // Given
+        LocalDate endDate = LocalDate.now().plusDays(5);
+        List<Rent> rents = Arrays.asList(testRent);
+        when(rentRepository.findByEndDate(endDate)).thenReturn(rents);
+
+        // When
+        List<Rent> result = rentService.getRentsByEndDate(endDate);
+
+        // Then
+        assertThat(result).hasSize(1);
+        verify(rentRepository).findByEndDate(endDate);
+    }
+
+    @Test
+    void isCarAvailableForPeriod_WhenCarExists_ShouldCheckAvailability() {
+        // Given
+        Long carId = 1L;
+        LocalDate startDate = LocalDate.now().plusDays(1);
+        LocalDate endDate = LocalDate.now().plusDays(5);
+        when(carRepository.findById(carId)).thenReturn(Optional.of(testCar));
+        when(rentRepository.findByCarAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                testCar, endDate, startDate)).thenReturn(Arrays.asList());
+
+        // When
+        boolean result = rentService.isCarAvailableForPeriod(carId, startDate, endDate);
+
+        // Then
+        assertThat(result).isTrue();
+        verify(carRepository).findById(carId);
+        verify(rentRepository).findByCarAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                testCar, endDate, startDate);
+    }
+
+    @Test
+    void isCarAvailableForPeriod_WhenCarDoesNotExist_ShouldReturnFalse() {
+        // Given
+        Long carId = 999L;
+        LocalDate startDate = LocalDate.now().plusDays(1);
+        LocalDate endDate = LocalDate.now().plusDays(5);
+        when(carRepository.findById(carId)).thenReturn(Optional.empty());
+
+        // When
+        boolean result = rentService.isCarAvailableForPeriod(carId, startDate, endDate);
+
+        // Then
+        assertThat(result).isFalse();
+        verify(carRepository).findById(carId);
+        verify(rentRepository, never()).findByCarAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                any(), any(), any());
+    }
+
     // ===== EDGE CASE TESTS =====
     @Test
     void addRent_WhenCarIdIsNull_ShouldThrowIllegalArgumentException() {
@@ -387,6 +499,8 @@ class RentServiceTest {
 
         verify(carRepository).findById(null);
         verify(rentRepository, never()).save(any());
+        verify(notificationService, never()).notifyOwnerOfNewBooking(any());
+        verify(notificationService, never()).notifyRenterOfConfirmation(any());
     }
 
     // ===== HELPER METHODS =====
