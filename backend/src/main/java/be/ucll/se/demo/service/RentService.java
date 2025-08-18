@@ -1,18 +1,24 @@
-
 package be.ucll.se.demo.service;
 
 import be.ucll.se.demo.model.Car;
 import be.ucll.se.demo.model.Rent;
 import be.ucll.se.demo.repository.RentRepository;
 import be.ucll.se.demo.repository.CarRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@Transactional
 public class RentService {
+
+    @Autowired
+    private NotificationService notificationService;
 
     private final RentRepository rentRepository;
     private final CarRepository carRepository;
@@ -42,11 +48,28 @@ public class RentService {
             throw new IllegalArgumentException("Start date must be before end date.");
         }
 
-        return rentRepository.save(rent);
+        // Save rent first
+        Rent savedRent = rentRepository.save(rent);
+
+        // Send notifications
+        notificationService.notifyOwnerOfNewBooking(savedRent);
+        notificationService.notifyRenterOfConfirmation(savedRent);
+
+        return savedRent;
     }
 
-    public void deleteRent(Long id) {
-        rentRepository.deleteById(id);
+    public void deleteRent(Long rentId) {
+        Optional<Rent> rentOpt = rentRepository.findById(rentId);
+        if (rentOpt.isPresent()) {
+            Rent rent = rentOpt.get();
+
+            // Verstuur annulering notificaties
+            notificationService.notifyBookingCancellation(rent);
+
+            rentRepository.deleteById(rentId);
+        } else {
+            throw new IllegalArgumentException("Rent with ID " + rentId + " does not exist.");
+        }
     }
 
     // Basis methodes op basis van standaard repository methodes
@@ -54,7 +77,6 @@ public class RentService {
         return rentRepository.findByCar(car);
     }
 
-    // ✅ FIXED: Gebruik nieuwe method name
     public List<Rent> getRentsByRenterEmail(String email) {
         return rentRepository.findByRenterEmail(email);
     }
@@ -65,5 +87,28 @@ public class RentService {
 
     public List<Rent> getActiveOrUpcomingRentsForCar(Car car) {
         return rentRepository.findByCarAndEndDateGreaterThanEqual(car, LocalDate.now());
+    }
+
+    // Nieuwe methodes voor scheduler/reminder functionaliteit
+    public List<Rent> getRentsByStartDate(LocalDate startDate) {
+        return rentRepository.findByStartDate(startDate);
+    }
+
+    public List<Rent> getRentsByEndDate(LocalDate endDate) {
+        return rentRepository.findByEndDate(endDate);
+    }
+
+    // Helper methode voor beschikbaarheidscheck
+    public boolean isCarAvailableForPeriod(Long carId, LocalDate startDate, LocalDate endDate) {
+        Optional<Car> carOpt = carRepository.findById(carId);
+        if (carOpt.isEmpty()) {
+            return false;
+        }
+
+        Car car = carOpt.get();
+        List<Rent> conflictingRents = rentRepository.findByCarAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                car, endDate, startDate);
+
+        return conflictingRents.isEmpty();
     }
 }
