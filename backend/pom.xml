@@ -44,7 +44,6 @@
     </properties>
 
     <repositories>
-        <!-- Maven Central heeft prioriteit -->
         <repository>
             <id>central</id>
             <name>Maven Central</name>
@@ -54,7 +53,6 @@
             </releases>
         </repository>
         
-        <!-- GitHub repository alleen voor jouw packages -->
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
@@ -156,13 +154,13 @@
             <scope>runtime</scope>
         </dependency>
         
-        <!-- Flyway Core - GEBRUIK SPRING BOOT MANAGED VERSION -->
+        <!-- Flyway Core -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
         </dependency>
         
-        <!-- Flyway PostgreSQL Support - GEBRUIK SPRING BOOT MANAGED VERSION -->
+        <!-- Flyway PostgreSQL Support -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
@@ -172,6 +170,33 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
+        <!-- JUnit Platform voor Cucumber (alleen één keer!) -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite</artifactId>
+            <scope>test</scope>
+        </dependency>
+        
+        <!-- Cucumber Dependencies -->
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-java</artifactId>
+            <version>7.14.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-spring</artifactId>
+            <version>7.14.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-junit-platform-engine</artifactId>
+            <version>7.14.0</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -191,6 +216,19 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.3</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                        <include>**/*TestRunner.java</include>
+                    </includes>
+                </configuration>
             </plugin>
 
             <plugin>
@@ -244,6 +282,7 @@
                 </configuration>
             </plugin>
         </plugins>
+        
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
