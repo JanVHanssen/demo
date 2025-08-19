@@ -97,30 +97,32 @@ const Header: React.FC = () => {
     ];
 
     if (user) {
-      baseItems.push({ href: "/dashboard", label: t('navigation.dashboard'), show: true });
-      
-      if (canManageCars()) {
-        baseItems.push({ href: "/Cars", label: t('navigation.cars'), show: true });
-      }
-      
-      baseItems.push({ href: "/Rentals", label: t('navigation.rentals'), show: true });
-      
-      if (isRenter() || isAdmin()) {
-        baseItems.push({ href: "/Rents", label: t('navigation.rent'), show: true });
-      }
-      
-      if (canViewBookkeeping()) {
-        baseItems.push({ href: "/dashboard/bookkeeping", label: t('navigation.bookkeeping'), show: true });
-      }
-      
-      // NIEUW: Admin Users menu item
+      // Admin Users management - only for admins
       if (canManageUsers()) {
         baseItems.push({ 
           href: "/AdminUsers", 
           label: t('navigation.users'), 
           show: true,
-          icon: Users // Voeg icon toe voor betere UX
+          icon: Users
         });
+      }
+      
+      // Cars management - for owners and admins
+      if (canManageCars()) {
+        baseItems.push({ href: "/Cars", label: t('navigation.cars'), show: true });
+      }
+      
+      // Rentals - for everyone logged in
+      baseItems.push({ href: "/Rentals", label: t('navigation.rentals'), show: true });
+      
+      // Rents - for renters and admins
+      if (isRenter() || isAdmin()) {
+        baseItems.push({ href: "/Rents", label: t('navigation.rent'), show: true });
+      }
+      
+      // Bookkeeping - for accountants and admins
+      if (canViewBookkeeping()) {
+        baseItems.push({ href: "/bookkeeping", label: t('navigation.bookkeeping'), show: true });
       }
     } else {
       baseItems.push(
@@ -130,16 +132,6 @@ const Header: React.FC = () => {
     }
 
     return baseItems.filter(item => item.show);
-  };
-
-  const getDashboardLink = () => {
-    if (!user) return "/dashboard";
-    
-    if (isAdmin()) return "/dashboard/admin";
-    if (isAccountant()) return "/dashboard/accountant";
-    if (isOwner()) return "/dashboard/owner";
-    if (isRenter()) return "/dashboard/renter";
-    return "/dashboard";
   };
 
   return (
@@ -191,7 +183,7 @@ const Header: React.FC = () => {
             {/* User section */}
             {user ? (
               <div className="relative">
-                {/* UPDATED: Notifications with new component */}
+                {/* Notifications */}
                 <NotificationDropdown userEmail={user.email} />
 
                 {/* User Menu Button */}
@@ -212,7 +204,7 @@ const Header: React.FC = () => {
                   />
                 </button>
                 
-                {/* User dropdown menu - rest remains the same */}
+                {/* User dropdown menu */}
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200/50 z-50 overflow-hidden backdrop-blur-md">
                     {/* User info header */}
@@ -235,7 +227,30 @@ const Header: React.FC = () => {
                     
                     {/* Menu items */}
                     <div className="py-2">
+                      {/* Quick actions based on role */}
+                      {isAdmin() && (
+                        <Link 
+                          href="/AdminUsers" 
+                          className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 group"
+                          onClick={() => setShowUserMenu(false)}
+                        >
+                          <Users size={18} className="text-gray-400 group-hover:text-red-600" />
+                          <span className="group-hover:text-gray-900">{t('navigation.userManagement')}</span>
+                        </Link>
+                      )}
+                      
+                      {canManageCars() && (
+                        <Link 
+                          href="/Cars" 
+                          className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 group"
+                          onClick={() => setShowUserMenu(false)}
+                        >
+                          <BarChart3 size={18} className="text-gray-400 group-hover:text-blue-600" />
+                          <span className="group-hover:text-gray-900">{t('navigation.cars')}</span>
+                        </Link>
+                      )}
 
+                      <div className="border-t border-gray-200/50 my-2"></div>
                       
                       <Link 
                         href="/profile" 

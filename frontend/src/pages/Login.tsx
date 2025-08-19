@@ -138,7 +138,7 @@ export default function Login() {
 
           <div className="text-center mt-4">
             <p className="text-xs text-gray-500">
-              {t('auth.adminLogin', 'Admin login')}: admin@car4rent.com / admin123
+              {t('auth.adminLogin', 'Admin login')}: admin / admin123
             </p>
             <p className="text-xs text-gray-500 mt-1">
               {t('auth.testUsers', 'Test users')}: owner@test.com, renter@test.com, accountant@test.com (password123)

@@ -132,26 +132,7 @@ const Home: React.FC = () => {
           </div>
         </div>
 
-        {/* Test database buttons - only for logged in users */}
-        {user && (
-          <div className="mt-8 bg-gray-50 dark:bg-gray-800 rounded-lg p-6 max-w-2xl">
-            <h3 className="text-lg font-semibold mb-4">🔧 Quick Tests</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <button
-                onClick={() => window.open('/api/health/database', '_blank')}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition-colors"
-              >
-                Test Database
-              </button>
-              <button
-                onClick={() => window.open('/api/health/flyway', '_blank')}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded transition-colors"
-              >
-                Check Migrations
-              </button>
-            </div>
-          </div>
-        )}
+
       </main>
     </div>
   );
