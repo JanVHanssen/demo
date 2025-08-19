@@ -38,3 +38,5 @@ CREATE INDEX IF NOT EXISTS idx_notifications_read_status ON notifications(recipi
 
 -- Create a composite index for common queries
 CREATE INDEX IF NOT EXISTS idx_notifications_recipient_status_created ON notifications(recipient_email, status, created_at DESC);
+
+-- Test
