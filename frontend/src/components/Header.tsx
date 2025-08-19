@@ -235,14 +235,7 @@ const Header: React.FC = () => {
                     
                     {/* Menu items */}
                     <div className="py-2">
-                      <Link 
-                        href={getDashboardLink()}
-                        className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 group"
-                        onClick={() => setShowUserMenu(false)}
-                      >
-                        <BarChart3 size={18} className="text-gray-400 group-hover:text-blue-600" />
-                        <span className="group-hover:text-gray-900">{t('navigation.dashboard')}</span>
-                      </Link>
+
                       
                       <Link 
                         href="/profile" 

@@ -38,21 +38,8 @@ export default function Login() {
         roles: loginResponse.roles
       });
       
-      // Redirect based on user role
-      const userRoles = loginResponse.roles;
-      
-      // Priority-based redirect (Admin has highest priority)
-      if (userRoles.includes('ADMIN')) {
-        router.push('/');
-      } else if (userRoles.includes('ACCOUNTANT')) {
-        router.push('/');
-      } else if (userRoles.includes('OWNER')) {
-        router.push('/');
-      } else if (userRoles.includes('RENTER')) {
-        router.push('/');
-      } else {
-        router.push('/');
-      }
+      // Simple redirect to home - let the Header component handle role-based navigation
+      router.push('/');
       
     } catch (err: any) {
       setError(err.message || t('auth.invalidCredentials'));
@@ -152,6 +139,9 @@ export default function Login() {
           <div className="text-center mt-4">
             <p className="text-xs text-gray-500">
               {t('auth.adminLogin', 'Admin login')}: admin@car4rent.com / admin123
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {t('auth.testUsers', 'Test users')}: owner@test.com, renter@test.com, accountant@test.com (password123)
             </p>
           </div>
         </form>
