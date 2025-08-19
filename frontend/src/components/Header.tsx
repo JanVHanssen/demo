@@ -277,7 +277,7 @@ const Header: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                )}
+                )} </div>
               </div>
             ) : (
               <div className="flex items-center space-x-3">
@@ -294,9 +294,10 @@ const Header: React.FC = () => {
                   {t('navigation.register')}
                 </Link>
               </div>
-            )}
+            )
           </div>
         </div>
+      
       </div>
 
       {/* Mobile Navigation */}
