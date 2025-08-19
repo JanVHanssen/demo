@@ -63,7 +63,6 @@ public class RentalController {
         }
     }
 
-    // Extra endpoints voor filtering
     @GetMapping("/car/{carId}")
     public List<RentalDTO> getRentalsByCarId(@PathVariable Long carId) {
         return rentalService.getRentalsByCarIdDTO(carId);

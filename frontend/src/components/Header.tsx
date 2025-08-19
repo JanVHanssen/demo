@@ -119,11 +119,6 @@ const Header: React.FC = () => {
       if (isRenter() || isAdmin()) {
         baseItems.push({ href: "/Rents", label: t('navigation.rent'), show: true });
       }
-      
-      // Bookkeeping - for accountants and admins
-      if (canViewBookkeeping()) {
-        baseItems.push({ href: "/bookkeeping", label: t('navigation.bookkeeping'), show: true });
-      }
     } else {
       baseItems.push(
         { href: "/Login", label: t('navigation.login'), show: true },
@@ -182,15 +177,16 @@ const Header: React.FC = () => {
 
             {/* User section */}
             {user ? (
-              <div className="relative">
-                {/* Notifications */}
+              <div className="flex items-center space-x-3">
+                {/* Notifications - now separate from user menu */}
                 <NotificationDropdown userEmail={user.email} />
 
                 {/* User Menu Button */}
-                <button
-                  onClick={toggleUserMenu}
-                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-all duration-200 group ml-2"
-                >
+                <div className="relative">
+                  <button
+                    onClick={toggleUserMenu}
+                    className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-all duration-200 group"
+                  >
                   <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
                     {user.username.charAt(0).toUpperCase()}
                   </div>
@@ -202,10 +198,10 @@ const Header: React.FC = () => {
                     size={16} 
                     className={`text-gray-400 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} 
                   />
-                </button>
-                
-                {/* User dropdown menu */}
-                {showUserMenu && (
+                  </button>
+                  
+                  {/* User dropdown menu */}
+                  {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200/50 z-50 overflow-hidden backdrop-blur-md">
                     {/* User info header */}
                     <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200/50">

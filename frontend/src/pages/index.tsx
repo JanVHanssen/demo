@@ -79,12 +79,6 @@ const Home: React.FC = () => {
             
             {/* Quick action buttons for logged in users */}
             <div className="mt-4 flex flex-wrap gap-2 justify-center">
-              <Link
-                href="/dashboard"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition-colors"
-              >
-                📊 Dashboard
-              </Link>
               {user.roles?.includes('ADMIN') && (
                 <Link
                   href="/AdminUsers"
@@ -101,6 +95,12 @@ const Home: React.FC = () => {
                   🚗 Manage Cars
                 </Link>
               )}
+              <Link
+                href="/Rentals"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition-colors"
+              >
+                📋 View Rentals
+              </Link>
             </div>
           </div>
         )}

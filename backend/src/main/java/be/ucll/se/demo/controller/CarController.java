@@ -19,7 +19,6 @@ public class CarController {
         this.carService = carService;
     }
 
-    // Basis CRUD operaties
     @GetMapping
     public List<CarDTO> getAllCars() {
         return carService.getAllCarsDTO();
@@ -54,7 +53,6 @@ public class CarController {
         }
     }
 
-    // Extra query endpoints
     @GetMapping("/available")
     public List<CarDTO> getAvailableCars() {
         return carService.getAvailableCarsDTO();

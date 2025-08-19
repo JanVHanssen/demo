@@ -32,13 +32,11 @@ public class AuthController {
         this.jwtUtil = jwtUtil;
     }
 
-    // FIXED: Helper method for SHA-256 password hashing (hexadecimal output)
     private String hashPassword(String password) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
 
-            // Convert byte array to hexadecimal string
             StringBuilder hexString = new StringBuilder();
             for (byte b : hash) {
                 String hex = Integer.toHexString(0xff & b);
@@ -59,14 +57,12 @@ public class AuthController {
         String email = body.get("email");
         String password = body.get("password");
 
-        // Check voor verplichte velden
         if (username == null || username.isBlank() || email == null || email.isBlank()
                 || password == null || password.isBlank()) {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "Username or email already exists"));
         }
 
-        // Default to RENTER role
         RoleName role = RoleName.RENTER;
         if (body.containsKey("role")) {
             try {
@@ -90,7 +86,6 @@ public class AuthController {
                     "role", role.toString()));
 
         } catch (IllegalArgumentException e) {
-            // Hier wordt duplicate username/email afgehandeld
             return ResponseEntity.badRequest()
                     .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
@@ -101,11 +96,9 @@ public class AuthController {
         }
     }
 
-    // NEW: Enhanced registration with DTO validation
     @PostMapping("/register/enhanced")
     public ResponseEntity<?> registerEnhanced(@Valid @RequestBody RegisterRequestDTO registerDTO) {
         try {
-            // Verander van boolean naar User
             User user = userService.registerWithRole(
                     registerDTO.getUsername(),
                     registerDTO.getEmail(),
@@ -130,7 +123,6 @@ public class AuthController {
         }
     }
 
-    // FIXED: Updated login to use loginWithRoles and proper response format
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> loginRequest) {
         String username = loginRequest.get("username");
@@ -141,7 +133,6 @@ public class AuthController {
         System.out.println("Password received: " + password);
 
         try {
-            // Use loginWithRoles as expected by tests
             LoginResponseDTO loginResponse = userService.loginWithRoles(username, password);
 
             if (loginResponse != null) {
@@ -171,7 +162,6 @@ public class AuthController {
         }
     }
 
-    // UPDATED: Enhanced token validation with role information
     @PostMapping("/validate")
     public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -188,7 +178,6 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("valid", false));
         }
 
-        // Get user roles
         Set<RoleName> userRoles = userService.getUserRoles(email);
 
         Map<String, Object> response = new HashMap<>();
@@ -201,7 +190,6 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    // NEW: Check if user has specific role
     @GetMapping("/check-role/{role}")
     public ResponseEntity<?> checkUserRole(@RequestHeader(value = "Authorization", required = false) String authHeader,
             @PathVariable String role) {
