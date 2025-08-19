@@ -294,7 +294,7 @@ const Header: React.FC = () => {
                   {t('navigation.register')}
                 </Link>
               </div>
-            )
+            )}
           </div>
         </div>
       
