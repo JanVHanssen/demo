@@ -38,8 +38,8 @@ export default function Login() {
         roles: loginResponse.roles
       });
       
-      // Simple redirect to home - let the Header component handle role-based navigation
-      router.push('/');
+      // Force a page reload to ensure Header picks up the new auth state
+      window.location.href = '/';
       
     } catch (err: any) {
       setError(err.message || t('auth.invalidCredentials'));
