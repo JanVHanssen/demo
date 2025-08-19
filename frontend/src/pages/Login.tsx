@@ -43,15 +43,15 @@ export default function Login() {
       
       // Priority-based redirect (Admin has highest priority)
       if (userRoles.includes('ADMIN')) {
-        router.push('/index');
+        router.push('/');
       } else if (userRoles.includes('ACCOUNTANT')) {
-        router.push('/index');
+        router.push('/');
       } else if (userRoles.includes('OWNER')) {
-        router.push('/index');
+        router.push('/');
       } else if (userRoles.includes('RENTER')) {
-        router.push('/index');
+        router.push('/');
       } else {
-        router.push('/index');
+        router.push('/');
       }
       
     } catch (err: any) {
